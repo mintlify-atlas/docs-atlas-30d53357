@@ -1,0 +1,126 @@
+{
+  "projectType": "framework",
+  "projectName": "VR Stage Lighting",
+  "projectDescription": "A Unity framework for emulating professional stage lighting in VRChat with DMX512 control and AudioLink integration.",
+  "theme": "aspen",
+  "primaryColor": "#8B5CF6",
+  "lightColor": "#A78BFA",
+  "darkColor": "#6D28D9",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/dmx-system",
+              "concepts/audiolink-integration",
+              "concepts/shader-architecture",
+              "concepts/video-streaming"
+            ]
+          },
+          {
+            "group": "Fixtures",
+            "pages": [
+              "fixtures/overview",
+              "fixtures/moving-lights",
+              "fixtures/static-lights",
+              "fixtures/lasers",
+              "fixtures/disco-ball"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "components/dmx-static",
+              "components/audiolink-static",
+              "components/grid-reader",
+              "components/local-ui-control-panel"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/dmx-setup",
+              "guides/audiolink-setup",
+              "guides/streaming-setup",
+              "guides/performance-optimization",
+              "guides/custom-fixtures"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Scripts",
+            "pages": [
+              "api/vrstagelighting-dmx-static",
+              "api/vrstagelighting-audiolink-static",
+              "api/vrstagelighting-audiolink-laser",
+              "api/vrsl-localuicontrolpanel",
+              "api/vrsl-gridreader"
+            ]
+          },
+          {
+            "group": "Shaders",
+            "pages": [
+              "api/shaders/overview",
+              "api/shaders/moving-lights",
+              "api/shaders/static-lights",
+              "api/shaders/volumetric"
+            ]
+          },
+          {
+            "group": "Editor Tools",
+            "pages": [
+              "api/editor/manager-window",
+              "api/editor/dmx-patch-exporter",
+              "api/editor/fixture-definitions"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "DMX512 control via video streaming with Artnet Grid Node",
+    "AudioLink integration for audio-reactive lighting",
+    "Hardware-accelerated shader-based lighting system",
+    "Moving lights with pan/tilt control and gobo projection",
+    "Static lights including PAR, blinder, flasher, and lightbar",
+    "Lasers and disco ball effects",
+    "Local UI control panel for per-user brightness adjustment",
+    "Unity Editor tools for DMX patch management and fixture definitions",
+    "VRChat UdonSharp scripts for dynamic control",
+    "Optimized for VR performance with GPU instancing"
+  ],
+  "publicApiSurface": [
+    "VRStageLighting_DMX_Static",
+    "VRStageLighting_AudioLink_Static",
+    "VRStageLighting_AudioLink_Laser",
+    "VRSL_LocalUIControlPanel",
+    "VRSL_GridReader",
+    "VRSL_DMXGlobalExport",
+    "VRSL_CameraConfigurator",
+    "VRSL_ManagerWindow",
+    "VRSL_DMXPatchExporter",
+    "VRSL_FixtureDefinitions",
+    "Moving Light Shaders (Spotlight, Washlight)",
+    "Static Light Shaders (PAR, Blinder, Flasher, Lightbar)",
+    "AudioLink Shaders",
+    "Volumetric Shaders",
+    "Disco Ball Shader",
+    "Laser Shaders"
+  ]
+}
