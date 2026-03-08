@@ -1,0 +1,377 @@
+---
+title: 'Disco Ball'
+description: 'Rotating mirror ball projection effects'
+---
+
+The VRSL disco ball creates a classic rotating mirror ball effect by projecting a cubemap texture that spins continuously. It's a single-channel fixture optimized for simple intensity control.
+
+## Overview
+
+The disco ball fixture simulates a traditional mirror ball effect:
+- Rotating projection pattern
+- Cubemap-based rendering
+- Single-channel DMX control (intensity only)
+- Distance-scaled projection
+- Depth-buffer integration for realistic placement
+
+**Prefabs:**
+- DMX Horizontal: `VRSL-DMX-Static-DiscoBall-H-1CH.prefab`
+- DMX Vertical: `VRSL-DMX-Static-DiscoBall-V-1CH.prefab`  
+- DMX Legacy: `VRSL-DMX-Static-DiscoBall-L-1CH.prefab`
+- AudioLink: `VRSL-AudioLink-DiscoBall.prefab`
+
+## DMX Channel Layout
+
+The disco ball uses only 1 DMX channel:
+
+| Channel | Function | Range | Description |
+|---------|----------|-------|-------------|
+| 1 | Intensity | 0-255 | Master brightness (0=off, 255=full) |
+
+<Note>
+Below DMX value ~13 (0.05 normalized), the disco ball is completely disabled to save rendering resources.
+</Note>
+
+## Features
+
+### Rotation
+
+The disco ball projection rotates automatically:
+- **Rotation Speed:** Configurable via `_RotationSpeed` shader property
+- **Direction:** Controlled by positive (clockwise) or negative (counterclockwise) values
+- **Range:** -180 to +180 degrees per second
+- **Default:** 8.2 degrees/second
+
+Rotation is time-based and synchronized across all users.
+
+### Projection System
+
+The effect uses a sophisticated projection system:
+- **Cubemap Texture:** 6-sided texture mapped to world geometry
+- **Depth Integration:** Respects scene geometry via depth buffer
+- **Distance Scaling:** Projection scales based on distance from disco ball
+- **World Space:** Projection stays consistent regardless of camera position
+
+### Intensity Control
+
+Intensity affects the entire effect:
+- **DMX Control:** Channel 1 (0-255)
+- **Global Intensity:** Additional master control (0-1)
+- **Final Intensity:** Maximum brightness limit (0-1)
+- **Universal Intensity:** Additional multiplier
+
+Final output = DMX × Global × Final × Universal
+
+## Inspector Properties
+
+### DMX Settings
+
+```csharp
+enableDMXChannels     // Enable/disable DMX control
+dmxChannel            // DMX channel (1-512)
+dmxUniverse           // DMX universe (1-9)
+nineUniverseMode      // Extended universe mode
+useLegacySectorMode   // Legacy sector addressing
+```
+
+### Disco Ball Settings
+
+```csharp
+_RotationSpeed        // Rotation speed (-180 to 180°/sec)
+_Multiplier           // Brightness multiplier (0-10)
+_Emission             // HDR color tint
+_Cube                 // Cubemap texture for projection
+```
+
+### Intensity Settings
+
+```csharp
+_GlobalIntensity      // Master brightness (0-1)
+_FinalIntensity       // Maximum brightness limit (0-1)
+_UniversalIntensity   // Additional multiplier (0-1)
+_GlobalIntensityBlend // Blend between manual and global (0-1)
+```
+
+### Rendering Settings
+
+```csharp
+_UseWorldNorm         // Use world normal vs view normal
+_RenderMode           // Transparent or AlphaToCoverage
+_ClippingThreshold    // Alpha clipping threshold (0-1)
+_BlendDst             // Destination blend mode
+_AlphaToCoverage      // Enable alpha to coverage
+```
+
+## Configuration Examples
+
+### Basic Setup
+
+1. Place disco ball prefab in scene
+2. Position at desired height (typically ceiling)
+3. Configure DMX:
+   - DMX Channel: 1
+   - DMX Universe: 1
+   - Enable DMX Channels: ✓
+4. Adjust appearance:
+   - Rotation Speed: 8.2 (default)
+   - Multiplier: 1.0
+   - Emission: White
+
+### Slow Rotation Effect
+
+For gentle, ambient disco ball:
+```csharp
+_RotationSpeed = 3.0      // Slow rotation
+_Multiplier = 0.7         // Subtle brightness
+_GlobalIntensity = 0.8
+```
+
+### Fast Rotation Effect
+
+For energetic party atmosphere:
+```csharp
+_RotationSpeed = 20.0     // Fast rotation
+_Multiplier = 1.5         // Boosted brightness
+_Emission = Color.white * 1.5  // HDR boost
+```
+
+### Reverse Rotation
+
+For counterclockwise spin:
+```csharp
+_RotationSpeed = -8.2     // Negative for reverse
+```
+
+### Color Tinted Disco Ball
+
+For colored effects:
+```csharp
+_Emission = new Color(1.0f, 0.5f, 0.8f) * 1.2f  // Pink tint
+_Multiplier = 1.2
+```
+
+## Shader Properties
+
+The disco ball uses the `VRSL-Discoball.shader`:
+
+**Location:** `Runtime/Shaders/Discoball/`
+
+### Key Shader Features
+
+**Depth-Based Rendering:**
+- Samples scene depth buffer
+- Projects only on existing geometry
+- Respects occlusion automatically
+- Mirror-corrected depth calculation
+
+**Rotation System:**
+```glsl
+float4 Rotation(float4 vertPos)
+{
+    float angleY = radians(_Time.y * _RotationSpeed);
+    // Rotation matrix applied to projection
+}
+```
+
+**Stencil Masking:**
+- Stencil Ref: 142
+- Comp: NotEqual
+- Prevents rendering on certain surfaces
+
+## Cubemap Texture
+
+The disco ball projection uses a cubemap texture:
+
+### Default Texture
+- Pre-made disco ball pattern cubemap
+- Simulates mirror ball reflections
+- Optimized for performance
+
+### Custom Textures
+
+To use custom cubemap:
+1. Create/import cubemap texture
+2. Set texture type to "Cubemap" in import settings
+3. Assign to `_Cube` property in material
+4. Adjust `_Multiplier` for brightness
+
+**Cubemap Tips:**
+- Use 512×512 or 1024×1024 resolution per face
+- Enable mipmaps for better performance
+- Consider lighting and contrast
+- Test rotation to ensure seamless wrapping
+
+## Use Cases
+
+### Dance Floors
+- Classic disco atmosphere
+- Rotating light patterns on floor and walls
+- Combined with colored uplighting
+- Synchronized with music (via AudioLink)
+
+### Club Environments
+- Ambient background effect
+- Ceiling-mounted for wide coverage
+- Multiple balls for layered effects
+- Colored tints for different moods
+
+### Event Spaces
+- Wedding receptions
+- Party venues
+- Retro-themed environments
+- Photobooth backdrops
+
+### Stage Effects
+- Concert backgrounds
+- Theater productions
+- DJ booth accents
+- Performance atmospherics
+
+## Performance Optimization
+
+### Disable When Not Needed
+
+The disco ball auto-disables below threshold:
+```csharp
+// In shader, vertices culled when intensity < 0.05
+if(o.dmxIntensity.y <= 0.05 && _EnableDMX == 1)
+{
+    v.vertex = float4(0,0,0,0);
+}
+```
+
+Set DMX channel to 0 when not in use for automatic optimization.
+
+### Limit Coverage Area
+
+Position strategically:
+- Higher placement = wider coverage (more pixels)
+- Lower placement = tighter coverage (fewer pixels)
+- Adjust brightness instead of size for performance
+
+### Reduce Brightness Multiplier
+
+```csharp
+_Multiplier = 0.8         // Lower multiplier
+_UniversalIntensity = 0.7 // Global reduction
+```
+
+Lower values reduce bloom and post-processing load.
+
+## Troubleshooting
+
+### Disco Ball Not Visible
+- Check DMX channel value is above 13 (~0.05)
+- Verify `_EnableDMX` is enabled (or set to 0 for manual control)
+- Ensure `_GlobalIntensity` and `_FinalIntensity` > 0
+- Check disco ball is positioned where it can project onto geometry
+- Verify cubemap texture is assigned
+
+### Projection Looks Wrong
+- Check `_UseWorldNorm` setting (try toggling)
+- Verify cubemap texture is properly formatted
+- Ensure scene has geometry to project onto
+- Check depth texture is being generated (camera settings)
+
+### Not Rotating
+- Verify `_RotationSpeed` is not zero
+- Check that time is advancing (not paused)
+- Try higher rotation speed to make movement visible
+
+### Too Bright/Too Dim
+- Adjust `_Multiplier` for overall brightness
+- Modify DMX channel value (if in DMX mode)
+- Change `_GlobalIntensity` for master control
+- Boost `_Emission` color for HDR intensity
+
+### Flickering or Artifacts
+- Check depth buffer is enabled on camera
+- Verify `_ClippingThreshold` is appropriate (try 0.5)
+- Adjust `_RenderMode` (try AlphaToCoverage)
+- Check for z-fighting with other transparent objects
+
+### Projection Appears on Wrong Surfaces
+- Adjust stencil settings if needed
+- Check that surfaces have proper render queue
+- Verify depth buffer is correctly configured
+- Consider adjusting `_BlendDst` mode
+
+## AudioLink Integration
+
+AudioLink disco ball variant supports:
+- **Intensity Modulation** - Brightness reacts to audio
+- **Band Selection** - Choose frequency range
+- **Color Chord** - Auto-color from music
+- **Theme Colors** - Match AudioLink theme
+
+### AudioLink Setup Example
+
+```csharp
+EnableAudioLink = true
+Band = 0                  // Bass
+BandMultiplier = 1.5      // Sensitivity
+EnableColorChord = false  // Keep classic white
+```
+
+For music-reactive disco ball:
+1. Enable AudioLink
+2. Select bass band for thumping effect
+3. Adjust band multiplier for intensity range
+4. Consider color chord for dynamic colors
+
+See [AudioLink Setup](/guides/audiolink-setup) for details.
+
+## Advanced Techniques
+
+### Multiple Disco Balls
+
+Layer multiple balls for complex effects:
+```csharp
+// Ball 1 - Fast white
+_RotationSpeed = 15.0
+_Emission = Color.white
+
+// Ball 2 - Slow colored
+_RotationSpeed = -5.0
+_Emission = Color.cyan * 0.8
+
+// Ball 3 - Medium colored
+_RotationSpeed = 8.0
+_Emission = Color.magenta * 0.6
+```
+
+Position at different heights and angles for layered projections.
+
+### Synchronized Rotation
+
+Match rotation to music tempo:
+```csharp
+// For 120 BPM (2 beats per second)
+_RotationSpeed = 360.0 / (60.0 / 120.0)  // One rotation per beat
+// = 720°/sec
+```
+
+Calculate based on tempo for beat-synchronized spinning.
+
+### Dynamic Control
+
+Use Udon to modify properties at runtime:
+```csharp
+// Accelerate rotation over time
+float targetSpeed = Mathf.Lerp(5.0f, 30.0f, time);
+material.SetFloat("_RotationSpeed", targetSpeed);
+
+// Pulse brightness
+float intensity = 0.5f + 0.5f * Mathf.Sin(Time.time * 2.0f);
+material.SetFloat("_GlobalIntensity", intensity);
+```
+
+### Custom Projections
+
+Create themed effects with custom cubemaps:
+- **Star Field** - Space theme
+- **Geometric Patterns** - Modern/abstract
+- **Nature Scenes** - Organic projections
+- **Logo/Brand** - Corporate events
+
+Design in 3D software, export as cubemap, assign to material.

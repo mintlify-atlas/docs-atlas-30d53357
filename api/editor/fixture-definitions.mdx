@@ -1,0 +1,472 @@
+---
+title: 'Fixture Definitions'
+description: 'Create and manage DMX fixture type definitions with custom channel layouts'
+icon: 'lightbulb'
+---
+
+## Overview
+
+Fixture Definitions allow you to create structured metadata for DMX fixture types in VRSL. While VRSL handles fixture control internally, Fixture Definitions provide:
+
+- **Documentation**: Define what each DMX channel does for a fixture type
+- **Export Compatibility**: Provide fixture type information for MVR/PDF exports
+- **Organization**: Categorize fixtures by manufacturer/model
+- **Reference**: Quick lookup for channel functions during programming
+
+<Note>
+  Fixture Definitions are **cosmetic metadata only**. They do not affect how VRSL controls fixtures at runtime. They are primarily used by the [DMX Patch Exporter](/api/editor/dmx-patch-exporter).
+</Note>
+
+## Creating a Fixture Definition File
+
+<Steps>
+  <Step title="Create Asset">
+    Right-click in the Project window → `Create > VRSL > DMX Fixture Definition File`
+  </Step>
+  <Step title="Name the File">
+    Give it a descriptive name like `MyVenue_FixtureDefinitions.asset` or `MovingHeadSpot_Definitions.asset`
+  </Step>
+  <Step title="Select the File">
+    Click the new asset to view its custom inspector
+  </Step>
+</Steps>
+
+<Tip>
+  Create separate definition files for different venues or projects to keep fixture types organized.
+</Tip>
+
+## Fixture Definition Inspector
+
+### Main Interface
+
+<Note>
+  Screenshot would show: The Fixture Definition inspector with multiple definitions, each showing expandable channel lists and +/- buttons.
+</Note>
+
+The custom inspector provides:
+- **Size Field**: Total number of fixture definitions in this file
+- **+/- Buttons**: Quick add/remove definition entries
+- **Save Changes Button**: Commits modifications to the asset
+- **Definition Entries**: Expandable sections for each fixture type
+
+### Definition Entry Structure
+
+Each fixture definition contains:
+
+```
+Definition [N]
+├── Name: [Fixture Type Name]
+└── Channels [Expandable]
+    ├── Channel 1: [Function Name]
+    ├── Channel 2: [Function Name]
+    ├── Channel 3: [Function Name]
+    └── ...
+```
+
+## Creating Fixture Definitions
+
+### Example: Moving Head Spotlight
+
+<Steps>
+  <Step title="Add New Definition">
+    Click the **+** button or increase the **Size** field to add a definition slot.
+  </Step>
+  <Step title="Name the Fixture Type">
+    In the "Definition 1" field, enter: `Moving Head Spot - Generic 16ch`
+  </Step>
+  <Step title="Expand Channels">
+    Click the foldout arrow next to "Channels" to reveal channel list.
+  </Step>
+  <Step title="Set Channel Count">
+    Use the **+/-** buttons to set the number of channels (e.g., 16 for a 16-channel fixture).
+  </Step>
+  <Step title="Define Channel Functions">
+    Fill in each channel:
+    - Channel 1: `Pan`
+    - Channel 2: `Pan Fine`
+    - Channel 3: `Tilt`
+    - Channel 4: `Tilt Fine`
+    - Channel 5: `Dimmer`
+    - Channel 6: `Shutter/Strobe`
+    - Channel 7: `Red`
+    - Channel 8: `Green`
+    - Channel 9: `Blue`
+    - Channel 10: `White`
+    - Channel 11: `Color Wheel`
+    - Channel 12: `Gobo Wheel`
+    - Channel 13: `Gobo Rotation`
+    - Channel 14: `Prism`
+    - Channel 15: `Focus`
+    - Channel 16: `Control/Reset`
+  </Step>
+  <Step title="Save Changes">
+    Click the **Save Changes** button at the top of the inspector.
+  </Step>
+</Steps>
+
+### Example: LED PAR Can
+
+<Steps>
+  <Step title="Add Another Definition">
+    Click **+** to add a second definition.
+  </Step>
+  <Step title="Name It">
+    Enter: `LED PAR Can - RGBW 4ch`
+  </Step>
+  <Step title="Set 4 Channels">
+    Click **+** until you have 4 channels.
+  </Step>
+  <Step title="Define Channels">
+    - Channel 1: `Red`
+    - Channel 2: `Green`
+    - Channel 3: `Blue`
+    - Channel 4: `White`
+  </Step>
+  <Step title="Save">
+    Click **Save Changes**.
+  </Step>
+</Steps>
+
+## Channel Naming Conventions
+
+Use clear, industry-standard names for channel functions:
+
+### Movement Channels
+- `Pan` - Horizontal rotation
+- `Pan Fine` - 16-bit pan precision
+- `Tilt` - Vertical rotation
+- `Tilt Fine` - 16-bit tilt precision
+
+### Intensity Channels
+- `Dimmer` - Master intensity
+- `Dimmer Fine` - 16-bit dimmer precision
+
+### Color Channels
+- `Red`, `Green`, `Blue` - RGB color mixing
+- `White`, `Amber`, `UV` - Additional color emitters
+- `Color Wheel` - Physical color wheel position
+- `CTO` - Color temperature correction
+- `Color Macro` - Pre-programmed colors
+
+### Beam Channels
+- `Shutter/Strobe` - Shutter control and strobe effects
+- `Gobo Wheel` - Gobo pattern selection
+- `Gobo Rotation` - Gobo spin speed/position
+- `Prism` - Prism insertion and rotation
+- `Iris` - Beam diameter control
+- `Focus` - Beam focus near/far
+- `Zoom` - Beam angle adjustment
+- `Frost` - Beam diffusion
+
+### Control Channels
+- `Control/Reset` - Special functions and reset
+- `Macro` - Built-in macro programs
+- `Speed` - Effect speed control
+
+<Tip>
+  Match channel names to manufacturer documentation for easy reference during programming.
+</Tip>
+
+## Assigning Definitions to Fixtures
+
+### In Unity Inspector
+
+<Steps>
+  <Step title="Select Fixture GameObject">
+    Click a fixture in the scene hierarchy.
+  </Step>
+  <Step title="Find Fixture Type Property">
+    Locate the **Fixture Type** dropdown in the VRSL_DMX_Static component inspector.
+  </Step>
+  <Step title="Select Definition">
+    Choose a fixture type from the dropdown (populated from your definition files).
+  </Step>
+</Steps>
+
+### In VRSL Manager Window
+
+Fixture type selection is also available in the [VRSL Manager Window](/api/editor/manager-window):
+
+1. Open VRSL Manager Window
+2. Expand a fixture's foldout
+3. Select fixture type from dropdown
+4. Click "Apply Changes"
+
+<Note>
+  Fixture type assignments are saved with the fixture GameObject and included in patch data exports.
+</Note>
+
+## Using Definitions in Exports
+
+### JSON Export
+
+Fixture definitions appear in JSON exports:
+
+```json
+{
+  "fixtureName": "Spotlight_001",
+  "fixtureType": "Moving Head Spot - Generic 16ch",
+  "channelDefinitions": [
+    {"channel": 1, "function": "Pan"},
+    {"channel": 2, "function": "Pan Fine"},
+    {"channel": 3, "function": "Tilt"},
+    // ... etc
+  ]
+}
+```
+
+### MVR Export
+
+Fixture type names are embedded in MVR files:
+- Used for fixture matching in consoles
+- Helps previz software render correct fixtures
+- Provides GDTF lookup hints
+
+### PDF Export
+
+The PDF patch sheet includes:
+- Fixture type in the type column
+- Channel count derived from definition
+- Optional channel layout appendix
+
+## Editing Existing Definitions
+
+<Steps>
+  <Step title="Select Definition File">
+    Click the fixture definition asset in the Project window.
+  </Step>
+  <Step title="Expand Target Definition">
+    Find the definition you want to edit and expand its foldout.
+  </Step>
+  <Step title="Modify as Needed">
+    - Change fixture type name
+    - Add/remove channels with +/- buttons
+    - Update channel function names
+  </Step>
+  <Step title="Save Changes">
+    Click **Save Changes** button.
+  </Step>
+</Steps>
+
+<Warning>
+  Changing a fixture type name will break the link to fixtures that reference the old name. You'll need to reassign the fixture type to affected fixtures.
+</Warning>
+
+## Deleting Definitions
+
+<Steps>
+  <Step title="Reduce Size">
+    Click the **-** button or manually reduce the **Size** field.
+  </Step>
+  <Step title="Note: Last Definition Removed">
+    Definitions are removed from the end of the list. To remove a specific definition, you'll need to manually reorganize.
+  </Step>
+  <Step title="Save Changes">
+    Click **Save Changes** to commit the deletion.
+  </Step>
+</Steps>
+
+<Tip>
+  To remove a definition from the middle of the list, copy the later definitions' data, delete from the end, and recreate them in the correct order.
+</Tip>
+
+## Fixture Definition File Structure
+
+### Internal Data Structure
+
+```csharp
+[Serializable]
+public struct FixtureDefinition
+{
+    public string name;              // "Moving Head Spot - Generic 16ch"
+    public string[] channelNames;    // ["Pan", "Pan Fine", "Tilt", ...]
+    public bool foldOut;             // Inspector UI state
+}
+```
+
+### ScriptableObject
+
+```csharp
+public class VRSL_FixtureDefinitions : ScriptableObject
+{
+    public FixtureDefinition[] definitions;
+    
+    // Methods
+    public string[] GetNames();                       // Returns all fixture type names
+    public string[] GetChannelDefinition(int defID);  // Returns channel list for definition
+    public int DefinitionsArraySize { get; set; }     // Array size property
+}
+```
+
+## Best Practices
+
+### Naming Fixtures
+
+- **Include Channel Count**: `Moving Head Spot - 16ch`
+- **Specify Mode**: `LED Wash - RGBW Mode` vs `LED Wash - HSI Mode`
+- **Note Manufacturer**: `Chauvet Rogue R2 Spot`
+- **Differentiate Variants**: `Generic PAR - 3ch RGB` vs `Generic PAR - 4ch RGBW`
+
+### Organizing Definition Files
+
+**Single File Approach** (Recommended for small setups):
+- `VenueFixtures.asset` - All fixtures in one file
+
+**Multiple File Approach** (Recommended for large setups):
+- `MovingHeads.asset` - All moving head types
+- `LEDPars.asset` - All PAR can types
+- `Effects.asset` - Strobes, blinders, special effects
+- `Dimmers.asset` - Conventional dimmed fixtures
+
+### Matching Real-World Fixtures
+
+1. **Consult Manufacturer DMX Chart**: Use official channel layouts from product manuals
+2. **Match Channel Count**: Ensure definition has same number of channels as real fixture
+3. **Use Standard Names**: Stick to industry terminology for cross-software compatibility
+4. **Document Mode**: If fixture has multiple DMX modes, specify which mode the definition represents
+
+### Maintenance
+
+- Keep definition files in version control
+- Update definitions when adding new fixture types to venue
+- Archive old definitions for discontinued fixtures
+- Share definition files across projects that use same fixtures
+
+## Common Fixture Type Examples
+
+### Moving Head Spot (16ch)
+
+```
+Moving Head Spot - Generic 16ch
+1. Pan
+2. Pan Fine
+3. Tilt
+4. Tilt Fine
+5. Dimmer
+6. Shutter/Strobe
+7. Red
+8. Green
+9. Blue
+10. White
+11. Color Wheel
+12. Gobo Wheel
+13. Gobo Rotation
+14. Prism
+15. Focus
+16. Control/Reset
+```
+
+### Moving Head Wash (12ch)
+
+```
+Moving Head Wash - Generic 12ch
+1. Pan
+2. Pan Fine
+3. Tilt
+4. Tilt Fine
+5. Dimmer
+6. Shutter/Strobe
+7. Red
+8. Green
+9. Blue
+10. White
+11. Zoom
+12. Control/Reset
+```
+
+### LED PAR RGBAW (5ch)
+
+```
+LED PAR - RGBAW 5ch
+1. Red
+2. Green
+3. Blue
+4. Amber
+5. White
+```
+
+### Strobe (1ch)
+
+```
+Strobe - 1ch
+1. Strobe Speed
+```
+
+## API Reference
+
+### VRSL_FixtureDefinitions Methods
+
+#### GetNames()
+
+Returns an array of all fixture type names in the definition file.
+
+```csharp
+string[] fixtureTypes = definitionFile.GetNames();
+// Returns: ["Moving Head Spot - 16ch", "LED PAR - RGBAW 5ch", ...]
+```
+
+#### GetChannelDefinition(int defID)
+
+Returns the channel layout for a specific definition by index.
+
+```csharp
+string[] channels = definitionFile.GetChannelDefinition(0);
+// Returns: ["Pan", "Pan Fine", "Tilt", "Tilt Fine", ...]
+```
+
+#### DefinitionsArraySize
+
+Property to get or set the number of definitions in the file.
+
+```csharp
+int count = definitionFile.DefinitionsArraySize;
+definitionFile.DefinitionsArraySize = 10; // Resize array
+```
+
+### FixtureDefinition Struct
+
+#### SetNewChannelSize(int size)
+
+Resizes the channel array while preserving existing data.
+
+```csharp
+fixtureDef.SetNewChannelSize(16);
+// Expands or contracts channel array to 16 elements
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Fixture Types Not Appearing in Dropdown">
+    - Verify fixture definition file exists in project
+    - Check that definitions have been saved (click Save Changes)
+    - Ensure definition names are not empty strings
+    - Try restarting Unity to refresh asset database
+  </Accordion>
+
+  <Accordion title="Save Changes Button Does Nothing">
+    - Check Console for errors
+    - Verify file is not read-only in filesystem
+    - Try creating a new definition file
+    - May need to force save asset database
+  </Accordion>
+
+  <Accordion title="Fixture Types Missing in Export">
+    - Verify fixtures have fixture type assigned
+    - Check that fixture type name matches definition file exactly
+    - Ensure definition file is included in build/export
+  </Accordion>
+
+  <Accordion title="Channel Layout Wrong in PDF">
+    - Verify channel count matches real fixture
+    - Check for typos in channel names
+    - Ensure correct fixture type assigned to fixture
+    - Regenerate export after fixing definitions
+  </Accordion>
+</AccordionGroup>
+
+## Related Documentation
+
+- [DMX Patch Exporter](/api/editor/dmx-patch-exporter) - Uses fixture definitions in exports
+- [VRSL Manager Window](/api/editor/manager-window) - Assign fixture types to fixtures
+- [DMX Fixture Component](/api/vrstagelighting-dmx-static) - Runtime fixture control

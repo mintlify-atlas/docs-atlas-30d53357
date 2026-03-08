@@ -1,0 +1,367 @@
+---
+title: 'Static Lights'
+description: 'PAR lights, blinders, flashers, and lightbar fixtures'
+---
+
+Static lights are fixed-position fixtures that provide basic lighting effects without pan and tilt movement. VRSL offers multiple static light types optimized for different use cases.
+
+## Fixture Types
+
+### PAR Light
+
+Classic PAR can fixture with RGB color mixing.
+
+**Prefabs:**
+- DMX Horizontal (13CH): `VRSL-DMX-Static-ParLight-H-13CH.prefab`
+- DMX Horizontal (5CH): `VRSL-DMX-Static-ParLight-H-5CH.prefab`
+- DMX Vertical (13CH): `VRSL-DMX-Static-ParLight-V-13CH.prefab`
+- DMX Legacy (13CH): `VRSL-DMX-Static-ParLight-L-13CH.prefab`
+- AudioLink: `VRSL-AudioLink-Static-ParLight.prefab`
+
+**Features:**
+- RGB color mixing
+- Volumetric cone rendering
+- Adjustable beam width and length
+- Projection surface rendering
+- Strobe effects (13CH mode)
+
+### Blinder
+
+High-intensity strobe/blinder effects fixture.
+
+**Prefabs:**
+- DMX Horizontal (13CH): `VRSL-DMX-Static-Blinder-H-13CH.prefab`
+- DMX Horizontal (5CH): `VRSL-DMX-Static-Blinder-H-5CH.prefab`
+- DMX Vertical (13CH): `VRSL-DMX-Static-Blinder-V-13CH.prefab`
+- DMX Legacy (13CH): `VRSL-DMX-Static-Blinder-L-13CH.prefab`
+- AudioLink: `VRSL-AudioLink-Static-Blinder.prefab`
+
+**Features:**
+- High-intensity output
+- Strobe effects
+- RGB color support
+- Wide beam angle
+- Optimized for flash effects
+
+### Flasher
+
+Single-channel strobe fixture for simple effects.
+
+**Prefabs:**
+- DMX Horizontal (1CH): `VRSL-DMX-Static-Flasher-H-1CH.prefab`
+- DMX Vertical (1CH): `VRSL-DMX-Static-Flasher-V-1CH.prefab`
+- DMX Legacy (1CH): `VRSL-DMX-Static-Flasher-L-1CH.prefab`
+- AudioLink: `VRSL-AudioLink-Static-Flasher.prefab`
+
+**Features:**
+- Single channel control
+- Intensity-only (white light)
+- Efficient for large quantities
+- Strobe-optimized
+
+### Lightbar
+
+Multi-segment RGB lightbar for wash effects.
+
+**Prefabs:**
+- DMX Horizontal (13CH): `VRSL-DMX-Static-LightBar-H-13CH.prefab`
+- DMX Horizontal (5CH): `VRSL-DMX-Static-LightBar-H-5CH.prefab`
+- DMX Horizontal (15CH): `VRSL-DMX-Static-MultiLightBar-H-15CH.prefab`
+- DMX Vertical (13CH): `VRSL-DMX-Static-LightBar-V-13CH.prefab`
+- DMX Legacy (13CH): `VRSL-DMX-Static-LightBar-L-13CH.prefab`
+- AudioLink: `VRSL-AudioLink-Static-Lightbar.prefab`
+
+**Features:**
+- Multiple light segments
+- RGB color mixing
+- Extended 15-channel mode for individual segment control
+- Wide coverage area
+- Linear arrangement
+
+## DMX Channel Layouts
+
+### 13-Channel Mode (PAR, Blinder, Lightbar)
+
+Standard full-featured control:
+
+| Channel | Function | Range | Description |
+|---------|----------|-------|-------------|
+| 1 | Reserved | 0-255 | Future use / compatibility |
+| 2 | Reserved | 0-255 | Future use / compatibility |
+| 3 | Reserved | 0-255 | Future use / compatibility |
+| 4 | Reserved | 0-255 | Future use / compatibility |
+| 5 | Red | 0-255 | Red color intensity |
+| 6 | Green | 0-255 | Green color intensity |
+| 7 | Blue | 0-255 | Blue color intensity |
+| 8 | Intensity | 0-255 | Master dimmer |
+| 9 | Strobe | 0-255 | Strobe rate (0=off, 1-255=speed) |
+| 10 | Reserved | 0-255 | Future use |
+| 11 | Reserved | 0-255 | Future use |
+| 12 | Reserved | 0-255 | Future use |
+| 13 | Reserved | 0-255 | Future use |
+
+<Note>
+Channels 1-4 and 10-13 are reserved for compatibility with the mover channel layout. Static lights only actively use channels 5-9.
+</Note>
+
+### 5-Channel Mode (PAR, Blinder, Lightbar)
+
+Simplified control for basic fixtures:
+
+| Channel | Function | Range | Description |
+|---------|----------|-------|-------------|
+| 1 | Red | 0-255 | Red color intensity |
+| 2 | Green | 0-255 | Green color intensity |
+| 3 | Blue | 0-255 | Blue color intensity |
+| 4 | Intensity | 0-255 | Master dimmer |
+| 5 | Strobe | 0-255 | Strobe rate (0=off, 1-255=speed) |
+
+<Note>
+5-channel mode is more efficient for simple setups where the extra reserved channels aren't needed.
+</Note>
+
+### 1-Channel Mode (Flasher)
+
+Minimal single-channel control:
+
+| Channel | Function | Range | Description |
+|---------|----------|-------|-------------|
+| 1 | Intensity | 0-255 | Master dimmer / strobe rate |
+
+### 15-Channel Mode (Multi-Lightbar)
+
+Extended control for multi-segment lightbars:
+
+| Channel | Function | Range | Description |
+|---------|----------|-------|-------------|
+| 1-4 | Reserved | 0-255 | Compatibility |
+| 5 | Red | 0-255 | Master red intensity |
+| 6 | Green | 0-255 | Master green intensity |
+| 7 | Blue | 0-255 | Master blue intensity |
+| 8 | Intensity | 0-255 | Master dimmer |
+| 9 | Strobe | 0-255 | Strobe rate |
+| 10 | Segment 1 | 0-255 | Individual segment control |
+| 11 | Segment 2 | 0-255 | Individual segment control |
+| 12 | Segment 3 | 0-255 | Individual segment control |
+| 13 | Segment 4 | 0-255 | Individual segment control |
+| 14 | Reserved | 0-255 | Future use |
+| 15 | Reserved | 0-255 | Future use |
+
+## Inspector Properties
+
+### DMX Settings
+
+```csharp
+enableDMXChannels     // Enable/disable DMX control
+dmxChannel            // Starting DMX channel (1-512)
+dmxUniverse           // DMX universe (1-9)
+nineUniverseMode      // Extended universe mode
+useLegacySectorMode   // Legacy sector addressing
+singleChannelMode     // Enable 1-channel mode (Flasher)
+```
+
+### Fixture Settings
+
+```csharp
+enableStrobe          // Enable strobe effects
+coneWidth             // Beam width (0-5.5)
+coneLength            // Beam length (0.5-10)
+maxConeLength         // Volumetric mesh length (0.275-10)
+tiltOffsetBlue        // Fixture aim angle (0-360°)
+panOffsetBlueGreen    // Fixture rotation (0-360°)
+```
+
+### Intensity Settings
+
+```csharp
+globalIntensity               // Master brightness (0-1)
+finalIntensity                // Maximum brightness limit (0-1)
+finalIntensityComponentMode   // Enable per-component control
+finalIntensityVolumetric      // Volumetric brightness (0-1)
+finalIntensityProjection      // Projection brightness (0-1)
+finalIntensityFixture         // Fixture mesh brightness (0-1)
+```
+
+### Color Settings
+
+```csharp
+lightColorTint        // HDR color tint (default: white)
+```
+
+## Configuration Examples
+
+### Basic PAR Light Setup
+
+1. Place PAR light prefab in scene
+2. Configure DMX settings:
+   - DMX Channel: 1 (or 1, 6, 11, etc. for 5CH mode)
+   - DMX Universe: 1
+   - Enable DMX Channels: ✓
+3. Adjust beam settings:
+   - Cone Width: 3.0 (wider than spotlight)
+   - Cone Length: 5.0
+   - Tilt Offset: 90 (aim straight down)
+4. Position and aim fixture as needed
+
+### Flasher Array
+
+For efficient flasher arrays:
+```csharp
+enableDMXChannels = true
+singleChannelMode = true
+dmxChannel = 1, 2, 3, 4... (sequential)
+enableStrobe = true
+```
+
+Place multiple flashers and assign sequential channels. Control all from a single DMX range.
+
+### Lightbar Wash
+
+For wide area coverage:
+```csharp
+coneWidth = 5.0              // Maximum width
+coneLength = 8.0             // Extended reach
+tiltOffsetBlue = 45          // Angled for wall wash
+finalIntensityVolumetric = 0.3  // Reduce cone visibility
+```
+
+### Blinder Effects
+
+For high-intensity strobe effects:
+```csharp
+enableStrobe = true
+lightColorTint = Color.white * 3.0  // Boost intensity
+finalIntensity = 1.0
+globalIntensity = 1.0
+coneWidth = 4.0              // Wide spread
+```
+
+## Aiming and Positioning
+
+### Tilt Offset
+
+Use `tiltOffsetBlue` to aim the fixture:
+- 0° - Horizontal forward
+- 90° - Straight down
+- 180° - Horizontal backward
+- 270° - Straight up
+
+### Pan Offset
+
+Use `panOffsetBlueGreen` to rotate the fixture:
+- 0° - Forward
+- 90° - Right
+- 180° - Backward
+- 270° - Left
+
+### Combined Aiming
+
+Combine both offsets for precise aiming:
+```csharp
+tiltOffsetBlue = 45      // 45° down
+panOffsetBlueGreen = 30  // 30° to the right
+```
+
+## Shaders
+
+Static lights use the following shaders:
+
+- `VRSL-StaticLight-ProjectionMesh.shader` - Light projection
+- `VRSL-StaticLight-LensFlare.shader` - Fixture lens effect
+
+**Location:** `Runtime/Shaders/StaticLights/`
+
+Lightbar-specific shaders:
+- `Runtime/Shaders/StaticLight-LightBarAndFlashers/`
+
+## Use Cases
+
+### PAR Lights
+- **Stage Washes** - Color washing stages and sets
+- **Uplighting** - Wall and backdrop illumination
+- **Truss Lighting** - Mounted on trusses for overhead coverage
+- **Floor Lighting** - Ground-mounted for uplighting effects
+
+### Blinders
+- **Audience Blinding** - High-intensity flash effects
+- **Strobe Effects** - Synchronized strobing
+- **Impact Moments** - Dramatic emphasis
+- **Photo Flash** - Simulated camera flashes
+
+### Flashers
+- **Accent Lighting** - Simple on/off effects
+- **Edge Lighting** - Truss and structure outlining
+- **Strobe Arrays** - Large groups of synchronized strobes
+- **Background Effects** - Ambient flashing
+
+### Lightbars
+- **Linear Washes** - Continuous line of light
+- **DJ Booth Lighting** - Front-facing wash effects
+- **Stage Edging** - Stage border illumination
+- **Architectural Lighting** - Building facade lighting
+
+## Performance Optimization
+
+### Use 5-Channel Mode
+When you don't need the full 13-channel layout:
+```csharp
+// Use 5CH prefabs instead of 13CH
+// Saves DMX address space and processing
+```
+
+### Disable Unused Features
+```csharp
+enableStrobe = false         // If strobing not needed
+finalIntensityVolumetric = 0 // Disable volumetrics if not visible
+```
+
+### Component Mode Optimization
+```csharp
+finalIntensityComponentMode = true
+finalIntensityVolumetric = 0.2    // Reduce volumetric
+finalIntensityProjection = 1.0    // Keep projection
+finalIntensityFixture = 0.5       // Reduce fixture mesh
+```
+
+## Troubleshooting
+
+### Fixture Not Lighting
+- Check DMX channel assignment
+- Verify RGB channels (5-7 in 13CH, 1-3 in 5CH) have values
+- Ensure intensity channel is above 0
+- Check `enableDMXChannels` is enabled
+
+### Wrong Colors
+- Verify channel offset is correct
+- Check universe assignment
+- Ensure RGB channel order matches DMX software
+- Test with manual color tint to verify fixture works
+
+### Strobe Not Working
+- Verify `enableStrobe` is enabled
+- Check strobe channel (9 in 13CH, 5 in 5CH) has value
+- Ensure strobe value is above threshold (~20)
+- Verify VRSL Grid Reader strobe output is enabled
+
+### Flasher Too Dim
+- Increase `lightColorTint` intensity (HDR value)
+- Boost `globalIntensity` to 1.0
+- Set `finalIntensity` to 1.0
+- Check single channel mode is enabled correctly
+
+### Beam Not Visible
+- Increase `coneLength` and `coneWidth`
+- Boost `finalIntensityVolumetric`
+- Ensure post-processing bloom is enabled
+- Check fixture isn't obscured by geometry
+
+## AudioLink Integration
+
+AudioLink variants support:
+- Band selection for intensity modulation
+- Band multiplier for sensitivity
+- Color chord sampling
+- Theme color integration
+- Per-fixture delay offset
+
+See [AudioLink Setup](/guides/audiolink-setup) for configuration details.

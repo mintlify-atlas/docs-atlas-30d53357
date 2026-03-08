@@ -1,0 +1,617 @@
+---
+title: Performance Optimization  
+description: Optimize VR Stage Lighting for smooth performance across all platforms and user hardware
+---
+
+## Overview
+
+VRSL is designed for high performance through GPU-accelerated shaders and batching, but optimization is still crucial for complex scenes. This guide covers techniques to maximize frame rate while maintaining visual quality.
+
+<Note>
+VRSL is 95% shader-based, meaning most computation happens on the GPU. Focus optimization efforts on GPU load, draw calls, and fill rate.
+</Note>
+
+## Performance Architecture
+
+VRSL achieves high performance through:
+- **GPU Instancing**: Multiple fixtures share the same shader
+- **Custom Render Textures**: Preprocessing DMX/AudioLink data once
+- **Shader-based Computation**: No CPU overhead for lighting calculations  
+- **Batching**: Reduces draw calls dramatically
+- **No Real-time Unity Lights**: Avoids expensive lighting calculations
+
+## Performance Budget Guidelines
+
+### Target Performance Metrics
+
+**PC VR (Good):**
+- 90 FPS constant
+- 50-100 VRSL fixtures
+- High volumetric quality
+- 3D noise enabled
+
+**PC VR (Acceptable):**
+- 72 FPS constant  
+- 100-150 VRSL fixtures
+- Medium volumetric quality
+- 2D noise only
+
+**PC Desktop (Good):**
+- 60-90 FPS
+- 150+ VRSL fixtures
+- High quality settings
+
+**Quest (Requires Optimization):**
+- 72 FPS constant
+- 20-30 fixtures maximum
+- Low volumetric quality
+- Depth light disabled
+- 3D noise disabled
+
+## VRSL Control Panel Optimization
+
+### Quality Modes
+
+The VRSL Local UI Control Panel provides multiple quality settings:
+
+#### Volumetric Quality
+
+**High Quality:**
+- Transparent rendering
+- Full alpha blending
+- Highest visual quality
+- Most expensive (render queue 3002)
+
+**Medium Quality:**  
+- Transparent rendering
+- Optimized blending
+- Good visual quality
+- Moderate cost (render queue 3002)
+
+**Low Quality:**
+- Alpha-to-coverage
+- Opaque rendering
+- Acceptable quality
+- Lowest cost (render queue 2452)
+
+<Tip>
+Set default quality to Medium or Low and let users increase it based on their hardware. Lock quality modes to prevent users from setting too high.
+</Tip>
+
+#### Projection Quality
+
+**High:**
+- Transparent blending
+- Smooth edges
+- Render queue 3001
+
+**Low:**
+- Alpha-to-coverage
+- Sharper edges  
+- Render queue 2451
+
+Configurable separately for:
+- Blinder projections
+- PAR projections  
+- Other projections
+
+#### Additional Quality Settings
+
+**Disco Ball Quality:**
+- High: Transparent, smooth
+- Low: Opaque, faster
+
+**Lens Flare Quality:**
+- High: Full effects
+- Low: Simplified
+
+### Depth Light Toggle
+
+**Require Depth Light:**
+- Enabled: Uses depth texture for volumetric lighting (better quality)
+- Disabled: No depth dependency (Quest compatible, better performance)
+
+<Warning>
+Disabling depth light requirement is REQUIRED for Quest. Enable "RequireDepthLight = false" in the Control Panel for Quest builds.
+</Warning>
+
+### Volumetric Noise Toggle
+
+**3D Noise:**
+- Creates realistic volumetric texture
+- Expensive on GPU
+- Can be disabled for major performance gain
+
+**2D Noise:**
+- Fallback when 3D disabled
+- Much cheaper
+- Still acceptable quality
+
+<Tip>
+Disable 3D noise for Quest builds. Consider disabling for complex scenes even on PC.
+</Tip>
+
+### Volumetric Mesh Quality
+
+Available in VRSL 2.6.0+:
+
+1. Open VRSL Control Panel
+2. Navigate to volumetric mesh quality settings
+3. Switch between mesh quality levels:
+   - **High**: Full polygon count
+   - **Medium**: Reduced polygon count  
+   - **Low**: Minimal polygon count
+
+4. Apply globally to all fixtures in scene
+
+<Note>
+Lower poly meshes reduce GPU load with minimal visual impact from normal viewing distances.
+</Note>
+
+## Fixture Optimization Strategies
+
+### Fixture Count Guidelines
+
+**Per Universe:**
+- Maximum 50 fixtures for best performance
+- Can go higher with optimization
+- Consider visual impact vs. count
+
+**Total Scene:**
+- PC VR: 50-150 fixtures
+- PC Desktop: 150-300 fixtures
+- Quest: 20-30 fixtures maximum
+
+### Component-Based Intensity Control
+
+Use Final Intensity Component Mode (VRSL 2.6.2+) to disable unneeded components:
+
+```
+Fixture with all components: 3 draw calls
+- Volumetric: 1 draw call
+- Projection: 1 draw call  
+- Fixture body: 1 draw call
+
+Disable projection (set intensity to 0):
+- Saves 1 draw call per fixture
+- Saves fill rate on projection texture
+```
+
+**Strategy:**
+1. Enable Component Mode on fixtures
+2. Set unused component intensities to 0
+3. Reduce draw calls significantly
+
+### Fixture Placement
+
+**Optimize visibility:**
+- Remove fixtures not visible to players
+- Use stencil masks to hide lights in unused areas
+- Consider player's typical viewing angles
+- Don't place fixtures behind walls/ceilings
+
+**Strategic placement:**
+- Fewer, well-placed fixtures > many random ones
+- Use wash lights for large areas
+- Use spots for accents and focus
+- Create depth with layers, not quantity
+
+## Shader and Material Optimization
+
+### GPU Instancing
+
+VRSL uses GPU instancing automatically:
+- Fixtures with same material instance together
+- Dramatically reduces draw calls
+- Already optimized by VRSL
+
+**Maintain instancing:**
+- Use VRSL's material generation tool
+- Don't break prefab connections unnecessarily
+- Keep materials shared where possible
+
+### Custom Render Texture Settings
+
+Optimize CRT update rates:
+
+1. Select Control Panel in scene
+2. Set `_targetCRTUpdateRate` to 0.0 (default)
+3. For slower systems, can increase to 0.1 or higher
+
+**CRT Optimization (Unity 2022+):**
+- Update Period controls refresh rate
+- Lower = faster updates, more GPU load
+- Higher = slower updates, less GPU load
+- 0.0 = every frame (default)
+
+### Material Property Blocks
+
+VRSL uses MaterialPropertyBlocks for per-fixture properties:
+- Maintains GPU instancing
+- Efficient property updates
+- Already optimized by VRSL scripts
+
+**Don't break this by:**
+- Modifying materials directly instead of using VRSL scripts
+- Creating unique material instances per fixture
+- Changing shared material properties
+
+## Depth Light Optimization
+
+The depth light enables volumetric lighting depth effects:
+
+### Adding Depth Light
+
+1. In VRSL Control Panel, click "Spawn Depth Light"
+2. Directional light with shadows appears
+3. Position anywhere (direction matters, not position)
+4. Adjust shadow settings:
+
+**Optimal Shadow Settings:**
+```
+Shadow Type: Soft Shadows
+Strength: 1.0
+Resolution: Medium or High
+Bias: 0.05
+Normal Bias: 0.4  
+Near Plane: 0.2
+```
+
+### Quest Compatibility
+
+For Quest builds:
+
+1. Open VRSL Control Panel
+2. Set `RequireDepthLight = false`
+3. Either remove depth light or disable shadows
+4. Reduces GPU load significantly
+
+<Tip>
+You can have separate PC and Quest versions of your world, one with depth light enabled and one without.
+</Tip>
+
+## DMX-Specific Optimization
+
+### Interpolation Settings
+
+Interpolation smooths DMX data but adds slight overhead:
+
+1. Access via Control Panel > CRT Materials
+2. Select Movement Interpolation material
+3. Adjust smoothing:
+   - Maximum smoothing (0): Best quality, most processing
+   - Minimum smoothing (1): Fast movement, less processing
+
+**In-Game Interpolation Modifier:**
+- VRSL automatically reduces interpolation in-game
+- Configurable via `inGameInterpolationModifier`
+- Default 1.55x reduction
+- Improves performance without sacrificing quality
+
+### Extended Universes
+
+Using 9-universe mode vs. single universe:
+- More universes = larger textures = more VRAM
+- Only enable if you need >512 channels
+- Disable if using single universe for slight performance gain
+
+### DMX Mode Selection
+
+**Performance comparison:**
+- Horizontal: Standard (recommended)
+- Vertical: Equivalent to Horizontal  
+- Legacy: Slightly less efficient
+
+Use Horizontal or Vertical for new projects.
+
+## AudioLink Optimization
+
+### AudioLink CRT
+
+AudioLink uses interpolation CRT:
+- Minimal overhead
+- Shared across all AudioLink fixtures
+- Pre-processes frequency data once
+
+**Optimization:**
+- Reduce AudioLink resolution if needed (in AudioLink prefab)
+- Disable AudioLink when not playing music
+- Use lower delay values (faster updates)
+
+### Fixture Count
+
+AudioLink fixtures are slightly cheaper than DMX:
+- No video decoding overhead
+- Simpler data structure
+- Can have 10-20% more fixtures vs. DMX
+
+### Band Assignment
+
+No performance difference between bands:
+- Choose bands for artistic reasons
+- All bands computed simultaneously
+
+## Scene-Wide Optimization
+
+### Occlusion Culling
+
+Set up occlusion culling for your world:
+
+1. **Window > Rendering > Occlusion Culling**
+2. Bake occlusion data
+3. VRSL fixtures will be culled when not visible
+4. Major performance improvement in large venues
+
+<Tip>
+Occlusion culling is especially important for multi-room venues. Lights in hidden rooms won't be rendered.
+</Tip>
+
+### LOD Groups
+
+For complex fixture models:
+
+1. Create LOD groups on fixture prefabs
+2. Add lower-poly versions at distances
+3. Reduces vertex processing for distant fixtures
+
+**Example LOD Setup:**
+- LOD 0 (0-10m): Full detail
+- LOD 1 (10-25m): 50% polygons
+- LOD 2 (25m+): 25% polygons
+
+### Stencil Masks
+
+Prevent lights rendering in unused areas:
+
+1. Spawn stencil masks from Control Panel:
+   - Cube Mask
+   - Cylinder Mask  
+   - Capsule Mask
+   - Sphere Mask
+2. Place in doorways, hallways, etc.
+3. Lights won't render through masks
+4. Saves fill rate and processing
+
+**Usage:**
+- Prevent light leaking between rooms
+- Reduce overdraw in complex geometry
+- Focus GPU power on visible areas
+
+## Post-Processing Optimization
+
+### Bloom Settings
+
+Bloom enhances VRSL but has performance cost:
+
+**Optimized Bloom Settings:**
+```
+Intensity: 0.3-0.5
+Threshold: 0.9-1.1  
+Soft Knee: 0.5
+Clamp: 65472 (max HDR)
+Diffusion: 7
+Anamorphic Ratio: 0  
+Color: White
+Fast Mode: Enabled
+```
+
+**Performance Tips:**
+- Enable Fast Mode
+- Reduce Diffusion (number of passes)
+- Increase Threshold (less pixels affected)
+- Let users control via Local UI Panel
+
+### Other Post-Processing
+
+Minimize other expensive effects:
+- **Avoid**: Screen Space Reflections (very expensive)
+- **Avoid**: Ambient Occlusion (expensive)  
+- **Use**: Color Grading (cheap)
+- **Use**: Vignette (cheap)
+- **Use**: Bloom (moderate, optimized)
+
+## Quest Optimization Checklist
+
+<Steps>
+
+### Mandatory Changes
+
+- [ ] Disable Require Depth Light in Control Panel
+- [ ] Disable Volumetric 3D Noise in Control Panel  
+- [ ] Set all fixtures to Low Volumetric Quality
+- [ ] Set all projections to Low Quality
+- [ ] Remove or disable depth light shadows
+- [ ] Reduce fixture count to 20-30 maximum
+
+### Recommended Changes
+
+- [ ] Use low-poly volumetric meshes
+- [ ] Disable unused fixture components
+- [ ] Remove disco balls (expensive)
+- [ ] Simplify or remove lasers
+- [ ] Reduce projection texture resolution
+- [ ] Disable bloom post-processing
+- [ ] Bake occlusion culling
+- [ ] Use stencil masks aggressively
+
+### Testing
+
+- [ ] Test on Quest hardware
+- [ ] Maintain 72 FPS
+- [ ] Check thermal throttling
+- [ ] Test with multiple users
+
+</Steps>
+
+<Warning>
+Quest has strict performance requirements. Exceeding them can result in world being blocked from Quest. Test early and often.
+</Warning>
+
+## Monitoring Performance
+
+### Unity Editor
+
+**Stats Panel:**
+- FPS: Target 90+ for VR, 60+ for desktop
+- Batches: Lower is better (instancing helps)
+- Tris: Monitor total triangles
+- SetPass calls: Draw call overhead
+
+**Profiler:**
+1. **Window > Analysis > Profiler**
+2. Enter Play Mode
+3. Monitor:
+   - GPU: Shader time, fill rate
+   - Rendering: Draw calls, batches
+   - Memory: Texture memory, mesh memory
+
+### VRChat In-World
+
+**Performance Rank:**
+- Check your world's performance rank
+- Aim for "Good" or "Medium"
+- "Very Poor" will limit audience
+
+**FPS Counter:**
+- Enable in VRChat settings
+- Monitor during testing
+- Test with multiple users
+
+**VRChat SDK Performance Stats:**
+- Check before upload
+- Review warnings and errors  
+- Address "Very Poor" ratings
+
+## Optimization Workflow
+
+<Steps>
+
+### Baseline Measurement
+
+1. Set up your lighting scene
+2. Enter Play Mode
+3. Record FPS, draw calls, batches
+4. Profile GPU and CPU time
+5. Note current fixture count
+
+### Iterative Optimization
+
+1. Make one change at a time
+2. Measure impact
+3. Keep if performance improves
+4. Revert if no improvement or quality suffers
+5. Document what works
+
+### Testing Across Hardware
+
+1. Test on your development machine
+2. Test on low-end PC (if available)
+3. Test in VRChat (more realistic)
+4. Test with friends on various hardware
+5. Test on Quest (if targeting)
+
+### Optimization Priority
+
+**High Impact:**
+1. Reduce fixture count
+2. Lower volumetric quality
+3. Disable 3D noise
+4. Remove unused components
+5. Disable depth light (Quest)
+
+**Medium Impact:**
+6. Use low-poly volumetric meshes
+7. Optimize post-processing
+8. Add occlusion culling
+9. Use stencil masks  
+10. Reduce projection quality
+
+**Low Impact:**
+11. Adjust CRT update rates
+12. Optimize interpolation
+13. Fine-tune material settings
+
+</Steps>
+
+## Common Performance Issues
+
+### Low FPS with Few Fixtures
+
+**Check:**
+- Volumetric quality too high
+- 3D noise enabled on many fixtures
+- Depth shadows too high resolution
+- Post-processing too aggressive
+- Other scene elements (not VRSL)
+
+**Fix:**
+- Lower volumetric quality to Medium or Low
+- Disable 3D noise
+- Reduce shadow resolution
+- Optimize bloom settings
+
+### High Draw Calls
+
+**Check:**
+- Too many unique materials
+- Broken GPU instancing
+- Too many different fixture types
+
+**Fix:**
+- Use VRSL material generation tool
+- Consolidate fixture types
+- Ensure materials are shared
+- Check instancing is working
+
+### Memory Issues
+
+**Check:**
+- Too many high-res projection textures
+- Large DMX render textures (9-universe mode)
+- High-poly volumetric meshes
+
+**Fix:**
+- Reduce projection texture resolution
+- Disable extended universes if not needed
+- Use lower-poly volumetric meshes
+- Remove unused assets
+
+## Best Practices Summary
+
+<Tip>
+**Golden Rules:**
+1. Start with Medium/Low quality and let users increase
+2. Disable 3D noise unless visual quality is critical
+3. Use component mode to disable unused fixture parts
+4. Test on low-end hardware early
+5. Prioritize fixture placement over quantity  
+6. Use occlusion culling for multi-room venues
+7. For Quest: Disable depth light and reduce fixture count
+</Tip>
+
+**Development Workflow:**
+- Profile early and often
+- Optimize before adding more features
+- Test in VRChat regularly (editor performance differs)
+- Document what works for your hardware targets
+- Plan for lowest common denominator
+
+**Quality vs. Performance:**
+- High visual quality isn't worth excluding users
+- Medium quality VRSL still looks excellent  
+- Most users won't notice optimizations
+- Smooth frame rate > maximum quality
+- Make quality adjustable for users
+
+## Next Steps
+
+- Set up [DMX Control](/guides/dmx-setup)
+- Configure [AudioLink](/guides/audiolink-setup)  
+- Learn about [Video Streaming](/guides/streaming-setup)
+- Create [Custom Fixtures](/guides/custom-fixtures)
+
+## Resources
+
+- [Unity Optimization Manual](https://docs.unity3d.com/Manual/OptimizingGraphicsPerformance.html)
+- [VRChat World Optimization](https://creators.vrchat.com/worlds/udon/)
+- [VRSL Discord](https://vrsl.dev) - Performance help from community

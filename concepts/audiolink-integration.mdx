@@ -1,0 +1,415 @@
+---
+title: AudioLink Integration
+description: Learn how VRSL integrates with AudioLink for audio-reactive lighting effects
+icon: waveform
+---
+
+## Overview
+
+VRSL includes full integration with [AudioLink by llealloo](https://github.com/llealloo/vrc-udon-audio-link), allowing fixtures to react dynamically to music without DMX input. This system provides an alternative control method ideal for club environments and music venues.
+
+<Info>
+AudioLink integration uses the **shader implementation** for minimal overhead, avoiding CPU-side audio analysis entirely.
+</Info>
+
+## Architecture
+
+The AudioLink system operates independently from DMX:
+
+```
+┌──────────────┐
+│ Audio Source │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│  AudioLink   │ ◄─── FFT Analysis
+│  Component   │      4 Frequency Bands
+└──────┬───────┘
+       │
+       ▼
+┌──────────────────┐
+│ AudioLink Texture│ ◄─── GPU Texture
+│  (Float RGBA)    │      History Buffer
+└──────┬───────────┘
+       │
+       ▼
+┌──────────────────┐
+│  VRSL Shaders    │ ◄─── Sample & React
+│  (AudioLink)     │      Per-fixture
+└──────────────────┘
+```
+
+## Frequency Band Mapping
+
+AudioLink divides audio into four frequency bands:
+
+| Band | Frequency Range | Typical Instruments | VRSL Usage |
+|------|----------------|---------------------|------------|
+| **Bass** (0) | 0-200 Hz | Kick drum, sub-bass | Intensity, strobe |
+| **Low Mids** (1) | 200-500 Hz | Snare, bass guitar | Color modulation |
+| **High Mids** (2) | 500-2000 Hz | Vocals, guitars | Cone width, effects |
+| **Treble** (3) | 2000+ Hz | Hi-hats, cymbals | Fast strobes, highlights |
+
+### Band Selection
+
+The `VRStageLighting_AudioLink_Static` component exposes band selection:
+
+```csharp
+// From VRStageLighting_AudioLink_Static.cs:20-26
+public enum AudioLinkBandState
+{
+    Bass,           // Band 0
+    Low_Mids,       // Band 1
+    High_Mids,      // Band 2
+    Treble          // Band 3
+}
+```
+
+Shaders access the selected band:
+
+```hlsl
+// VRSL-AudioLink-Functions.cginc:155-158
+float getBand()
+{
+    return UNITY_ACCESS_INSTANCED_PROP(Props, _Band);
+}
+```
+
+## Amplitude Reading
+
+VRSL samples AudioLink's amplitude data with optional delay:
+
+```hlsl
+// VRSL-AudioLink-Functions.cginc:39-42
+inline float AudioLinkLerp3_g5(int Band, float Delay)
+{
+    return AudioLinkLerp(ALPASS_AUDIOLINK + float2(Delay, Band)).r;
+}
+```
+
+The main amplitude function:
+
+```hlsl
+// VRSL-AudioLink-Functions.cginc:182-192
+float GetAudioReactAmplitude()
+{
+    if(checkIfAudioLink() > 0)
+    {
+        return AudioLinkLerp3_g5(getBand(), getDelay()) * getBandMultiplier();
+    }
+    else
+    {
+        return 1;  // No reaction when disabled
+    }
+}
+```
+
+### Parameters
+
+**Band** - Which frequency range to react to (0-3)
+
+**Delay** - Sample history in frames (0-127)
+- Higher values = more "lagged" reaction
+- Useful for creating delayed lighting effects
+- Stored in AudioLink's history buffer
+
+**Band Multiplier** - Sensitivity scaling (1.0-15.0)
+- Amplifies weak signals
+- Prevents over-saturation of loud music
+
+```csharp
+// VRStageLighting_AudioLink_Static.cs:656-659
+props.SetFloat("_Delay", delay);
+props.SetFloat("_BandMultiplier", bandMultiplier);
+int b = (int) band;
+props.SetFloat("_Band", (float)b);
+```
+
+## Color Chord Integration
+
+ColorChord analyzes audio for dominant notes and generates colors:
+
+```hlsl
+// VRSL-AudioLink-Functions.cginc:194-197
+float4 GetColorChordLight()
+{
+    return AudioLinkData(ALPASS_CCLIGHTS).rgba;
+}
+```
+
+Used in emission calculation:
+
+```hlsl
+// VRSL-AudioLink-Functions.cginc:199-206
+float4 getEmissionColor()
+{
+    float4 emissiveColor = UNITY_ACCESS_INSTANCED_PROP(Props, _Emission);
+    float4 col = enableColorTextureSample ? 
+        (averageIntensity * GetTextureSampleColor()) : emissiveColor;
+    col = enableThemeColorSampling ? 
+        (averageIntensity * GetThemeSampleColor()) : col;
+    return checkIfColorChord() == 1 ? GetColorChordLight() * 1.5 : col;
+}
+```
+
+<Tip>
+ColorChord mode overrides manual color settings and texture sampling, providing musically-driven color changes.
+</Tip>
+
+## Theme Color Sampling
+
+AudioLink provides four theme colors that can be set by world creators:
+
+```hlsl
+// VRSL-AudioLink-Functions.cginc:67-82
+float4 GetThemeSampleColor()
+{
+    switch(UNITY_ACCESS_INSTANCED_PROP(Props, _ThemeColorTarget))
+    {
+        case 1:
+            return AudioLinkData(ALPASS_THEME_COLOR0);
+        case 2:
+            return AudioLinkData(ALPASS_THEME_COLOR1);
+        case 3:
+            return AudioLinkData(ALPASS_THEME_COLOR2);
+        case 4:
+            return AudioLinkData(ALPASS_THEME_COLOR3);
+        default:
+            return float4(0,0,0,1);
+    }
+}
+```
+
+Theme colors are set via MaterialPropertyBlock:
+
+```csharp
+// VRStageLighting_AudioLink_Static.cs:648-649
+props.SetInt("_EnableThemeColorSampling", enableThemeColorSampling == true ? 1 : 0);
+props.SetInt("_ThemeColorTarget", themeColorTarget);
+```
+
+## Texture Color Sampling
+
+Fixtures can sample colors from a custom texture:
+
+```hlsl
+// VRSL-AudioLink-Functions.cginc:58-65
+float4 GetTextureSampleColor()
+{
+    float4 rawColor = tex2Dlod(_SamplingTexture, 
+        float4(UNITY_ACCESS_INSTANCED_PROP(Props,_TextureColorSampleX), 
+               UNITY_ACCESS_INSTANCED_PROP(Props,_TextureColorSampleY), 0, 0));
+    float4 h = RGBtoHSV(rawColor.rgb);
+    h.z = 1.0;  // Full brightness
+    return useTraditionalSampling ? rawColor * multiplier : (HSVtoRGB(h) * multiplier);
+}
+```
+
+### Sampling Modes
+
+**Traditional Sampling** - Uses raw RGB values from texture
+
+**HSV Conversion** - Extracts hue only, sets saturation and value to maximum
+- Creates pure, vibrant colors
+- Consistent brightness regardless of source texture
+
+```csharp
+// VRStageLighting_AudioLink_Static.cs:644-647
+props.SetFloat("_TextureColorSampleX", textureSamplingCoordinates.x);
+props.SetFloat("_TextureColorSampleY", textureSamplingCoordinates.y);
+props.SetInt("_EnableColorTextureSample", enableColorTextureSampling == true ? 1 : 0);
+props.SetInt("_UseTraditionalSampling", traditionalColorTextureSampling == true ? 1 : 0);
+```
+
+## Component Configuration
+
+The `VRStageLighting_AudioLink_Static` component manages all AudioLink properties:
+
+### AudioLink Settings
+
+```csharp
+// VRStageLighting_AudioLink_Static.cs:37-68
+[Header("Audio Link Settings")]
+
+[SerializeField] private bool enableAudioLink;
+[SerializeField] private AudioLinkBandState band;
+[SerializeField, Range(0, 127)] private int delay;
+[SerializeField, Range(1.0f, 15.0f)] private float bandMultiplier = 1.0f;
+[SerializeField] private bool enableColorChord;
+```
+
+### Property Updates
+
+All changes trigger MaterialPropertyBlock updates:
+
+```csharp
+// VRStageLighting_AudioLink_Static.cs:651-660
+//AudioLink Stuff
+props.SetFloat("_EnableAudioLink", enableAudioLink == true ? 1.0f : 0.0f);
+props.SetInt("_EnableColorChord", enableColorChord == true ? 1 : 0);
+props.SetFloat("_Delay", delay);
+props.SetFloat("_BandMultiplier", bandMultiplier);
+int b = (int) band;
+float ba = 1.0f * b;
+props.SetFloat("_Band", ba);
+```
+
+<Note>
+AudioLink fixtures can be toggled without DMX, making them ideal for testing or permanent audio-reactive installations.
+</Note>
+
+## Intensity Modulation
+
+AudioLink amplitude modulates the final intensity:
+
+```hlsl
+// In vertex shader (VRSL-StandardMover-Vertex.cginc:600-603)
+o.audioGlobalFinalConeIntensity.x = GetAudioReactAmplitude();
+o.audioGlobalFinalConeIntensity.y = getGlobalIntensity();
+o.audioGlobalFinalConeIntensity.z = getFinalIntensity();
+o.audioGlobalFinalConeIntensity.w = getConeWidth();
+```
+
+Applied in fragment shader:
+
+```hlsl
+finalIntensity *= o.audioGlobalFinalConeIntensity.x;  // AudioLink amplitude
+finalIntensity *= o.audioGlobalFinalConeIntensity.y;  // Global intensity
+finalIntensity *= o.audioGlobalFinalConeIntensity.z;  // Final intensity
+```
+
+## Laser Integration
+
+The `VRStageLighting_AudioLink_Laser` component provides similar functionality for laser effects:
+
+```csharp
+// VRStageLighting_AudioLink_Laser.cs:32-79
+[Header("Audio Link Settings")]
+private bool enableAudioLink;
+private AudioLinkBandState band;
+[Range(0, 31)] private int delay;           // Note: Shorter range for lasers
+[Range(1.0f, 15.0f)] private float bandMultiplier = 1.0f;
+private bool enableColorChord;
+```
+
+### Laser-Specific Properties
+
+```csharp
+// VRStageLighting_AudioLink_Laser.cs:150-220
+[Range(-3.75f, 20.0f)] private float coneWidth = 2.5f;
+[Range(-0.5f, 5.0f)] private float coneLength = 8.5f;
+[Range(0.0f, 1.999f)] private float coneFlatness = 0.0f;
+[Range(-90.0f, 90.0f)] private float coneXRotation = 0.0f;
+[Range(-90.0f, 90.0f)] private float coneYRotation = 0.0f;
+[Range(-90.0f, 90.0f)] private float coneZRotation = 0.0f;
+[Range(4.0f, 68f)] private int laserCount = 14;
+[Range(0.003f, 0.25f)] private float laserThickness = 0.125f;
+[Range(-1.0f, 1.0f)] private float laserScroll = 0.0f;
+```
+
+## Disabling for DMX Mode
+
+When DMX is enabled, AudioLink can be automatically disabled:
+
+```csharp
+// VRStageLighting_AudioLink_Static.cs:748-756
+public void _UpdateInstancedPropertiesSansAudioLink()
+{
+    // ... other properties ...
+    
+    //AudioLink Stuff
+    props.SetFloat("_EnableAudioLink", 0.0f);
+    props.SetInt("_EnableColorChord", 0);
+    
+    // ... rest of properties ...
+}
+```
+
+## HSV Color Conversion
+
+For pure hue extraction from textures:
+
+```hlsl
+// VRSL-AudioLink-Functions.cginc:5-26
+float4 RGBtoHSV(in float3 RGB)
+{
+    float3 HSV = 0;
+    HSV.z = max(RGB.r, max(RGB.g, RGB.b));  // Value
+    float M = min(RGB.r, min(RGB.g, RGB.b));
+    float C = HSV.z - M;                     // Chroma
+    if (C != 0)
+    {
+        HSV.y = C / HSV.z;                   // Saturation
+        float3 Delta = (HSV.z - RGB) / C;
+        Delta.rgb -= Delta.brg;
+        Delta.rg += float2(2,4);
+        if (RGB.r >= HSV.z)
+            HSV.x = Delta.b;
+        else if (RGB.g >= HSV.z)
+            HSV.x = Delta.r;
+        else
+            HSV.x = Delta.g;
+        HSV.x = frac(HSV.x / 6);             // Hue
+    }
+    return float4(HSV, 1);
+}
+```
+
+## Performance Considerations
+
+### GPU Efficiency
+
+- AudioLink texture is sampled once per fixture per frame
+- Minimal ALU cost (single multiply for amplitude)
+- No branching in amplitude calculation
+- Compatible with GPU instancing
+
+### Recommended Settings
+
+**For Bass-heavy Music:**
+- Band: Bass (0)
+- Delay: 0-10
+- Multiplier: 2.0-5.0
+
+**For Melodic Content:**
+- Band: High Mids (2)
+- Delay: 10-30
+- Multiplier: 3.0-8.0
+
+**For Strobe Effects:**
+- Band: Treble (3)
+- Delay: 0
+- Multiplier: 8.0-15.0
+
+<Warning>
+High band multipliers with loud music can cause epileptic-triggering strobing. Always test in context and provide user controls.
+</Warning>
+
+## Example Setup
+
+Configuring an audio-reactive fixture:
+
+1. Add `VRStageLighting_AudioLink_Static` component
+2. Assign mesh renderers to `objRenderers` array
+3. Configure AudioLink settings:
+   - Enable AudioLink: ✓
+   - Band: Low Mids
+   - Delay: 15
+   - Band Multiplier: 4.0
+4. Set color mode:
+   - Enable Color Chord: ✓ (for automatic colors)
+   - OR
+   - Set Light Color Tint manually
+5. Adjust intensity ranges for desired effect
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="DMX System" icon="sliders" href="/concepts/dmx-system">
+    Compare with DMX-based control
+  </Card>
+  <Card title="Shader Architecture" icon="code" href="/concepts/shader-architecture">
+    How shaders process AudioLink data
+  </Card>
+</CardGroup>

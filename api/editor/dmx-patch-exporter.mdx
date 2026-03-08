@@ -1,0 +1,407 @@
+---
+title: 'DMX Patch Exporter'
+description: 'Save, load, and export DMX patch data in multiple formats including JSON, MVR, and PDF'
+icon: 'file-export'
+---
+
+## Overview
+
+The DMX Patch Exporter provides tools for persisting and exporting DMX fixture patch data from your Unity scene. This system allows you to:
+
+- Save patch data to survive scene corruption or Unity crashes
+- Load previously saved patch configurations
+- Export patch data for use in external lighting software
+- Generate documentation for your lighting setup
+
+<Note>
+  The DMX Patch Exporter requires a **VRSL_LocalUIControlPanel** component in your scene. All operations work with the currently active scene.
+</Note>
+
+## Accessing Patch Exporter Functions
+
+All patch exporter functions are accessible from the Unity menu bar:
+
+```
+VRSL/
+├── Save Patch Data
+├── Load Patch Data
+└── Export/
+    ├── To JSON
+    ├── To MVR
+    └── To PDF (Windows)
+```
+
+## Save Patch Data
+
+### Purpose
+
+Saves the current DMX fixture configuration to a ScriptableObject asset for later restoration.
+
+### Workflow
+
+<Steps>
+  <Step title="Configure Your Fixtures">
+    Set up all DMX fixtures in your scene with proper channel assignments, IDs, and properties using the [VRSL Manager Window](/api/editor/manager-window).
+  </Step>
+  <Step title="Save Patch Data">
+    Navigate to `VRSL > Save Patch Data` in the Unity menu.
+  </Step>
+  <Step title="Asset Created">
+    A `VRSL_DMXPatchSettings` asset is created in `Assets/VRSL DMX Patch Folder/`.
+    
+    The asset is automatically named: `VRSL DMX Patch Data_[SceneName].asset`
+  </Step>
+  <Step title="Verify Link">
+    The VRSL_LocalUIControlPanel component is automatically linked to this asset via its `fixtureSaveFile` property.
+  </Step>
+</Steps>
+
+### Saved Data Includes
+
+- DMX universe assignments
+- DMX channel numbers
+- Fixture IDs
+- Fixture types (if defined)
+- Fixture names/GameObjects
+- All fixture-specific settings:
+  - Intensity values
+  - Color tints
+  - Movement ranges (pan/tilt)
+  - Inversions and offsets
+  - Cone dimensions
+  - Special feature toggles
+
+<Tip>
+  Save patch data regularly when making significant changes to your lighting setup. This protects against scene corruption and makes it easy to revert changes.
+</Tip>
+
+### First Save vs. Subsequent Saves
+
+**First Save**:
+- Creates new `VRSL_DMXPatchSettings` asset
+- Creates `VRSL DMX Patch Folder` if it doesn't exist
+- Links asset GUID to control panel
+
+**Subsequent Saves**:
+- Overwrites existing linked asset
+- Preserves asset location and name
+- Updates all fixture data
+
+<Warning>
+  If the linked patch data asset is deleted from the project, the next save will create a new asset. The link to the old asset will be automatically removed.
+</Warning>
+
+## Load Patch Data
+
+### Purpose
+
+Restores previously saved DMX fixture configuration to all fixtures in the current scene.
+
+### Workflow
+
+<Steps>
+  <Step title="Ensure Scene Match">
+    Open the scene that corresponds to the saved patch data. Fixture GameObjects must exist in the scene with VRSL scripts attached.
+  </Step>
+  <Step title="Load Patch Data">
+    Navigate to `VRSL > Load Patch Data` in the Unity menu.
+  </Step>
+  <Step title="Data Restored">
+    All fixture properties are restored from the saved asset to matching fixtures in the scene.
+  </Step>
+  <Step title="Verify in Manager Window">
+    Open the [VRSL Manager Window](/api/editor/manager-window) to verify all settings were restored correctly.
+  </Step>
+</Steps>
+
+### How Fixtures Are Matched
+
+The load operation matches saved data to scene fixtures using:
+1. **GameObject name** (primary identifier)
+2. **GameObject hierarchy path** (secondary verification)
+3. **Component type** (DMX vs. AudioLink)
+
+<Note>
+  Renamed or moved fixtures may not load correctly. Try to maintain consistent GameObject names and hierarchy structure.
+</Note>
+
+### Use Cases
+
+- **Recovery**: Restore patch after scene corruption
+- **Iteration**: Revert to known good configuration while experimenting
+- **Collaboration**: Share patch data between team members
+- **Version Control**: Maintain patch history alongside scene versions
+
+## Export Formats
+
+### Export to JSON
+
+<Steps>
+  <Step title="Access JSON Export">
+    Navigate to `VRSL > Export > To JSON`
+  </Step>
+  <Step title="Choose Save Location">
+    A file dialog opens. Select destination folder and filename.
+  </Step>
+  <Step title="JSON Created">
+    A human-readable JSON file is created with complete patch data.
+  </Step>
+</Steps>
+
+#### JSON Structure
+
+```json
+{
+  "sceneName": "MyLightingScene",
+  "fixtures": [
+    {
+      "fixtureName": "Spotlight_001",
+      "fixtureID": 100,
+      "fixtureType": "Moving Head Spot",
+      "dmxUniverse": 1,
+      "dmxChannel": 1,
+      "properties": {
+        "globalIntensity": 1.0,
+        "lightColorTint": "#FFFFFF",
+        "maxMinPan": 180.0,
+        "maxMinTilt": -180.0,
+        "coneWidth": 15.0,
+        "coneLength": 10.0,
+        "invertPan": false,
+        "invertTilt": false,
+        "isUpsideDown": false
+      }
+    }
+  ]
+}
+```
+
+#### Use Cases
+
+- **Version Control**: Commit JSON to Git for tracking changes
+- **Documentation**: Human-readable patch reference
+- **Integration**: Import to web tools or custom scripts
+- **Archival**: Long-term storage format
+
+<Tip>
+  JSON export is cross-platform and works on Windows, macOS, and Linux.
+</Tip>
+
+### Export to MVR (My Virtual Rig)
+
+<Steps>
+  <Step title="Access MVR Export">
+    Navigate to `VRSL > Export > To MVR`
+  </Step>
+  <Step title="Choose Save Location">
+    A file dialog opens. Select destination and filename (.mvr extension).
+  </Step>
+  <Step title="MVR File Created">
+    An MVR-compliant file is generated compatible with industry standard tools.
+  </Step>
+</Steps>
+
+#### What is MVR?
+
+**My Virtual Rig (MVR)** is an open standard file format for describing entertainment technology setups. It's supported by:
+
+- **MA Lighting grandMA2/grandMA3** - Import VRSL fixtures as console patch
+- **Vectorworks Spotlight** - Visualize VRSL rig in CAD environment
+- **Vision/Capture/WYSIWYG** - Previz software integration
+- **GDTF Share** - Fixture library compatibility
+
+#### MVR Export Contents
+
+- Fixture positions (Unity world coordinates converted to MVR coordinate system)
+- DMX universe/address assignments
+- Fixture types (from [Fixture Definitions](/api/editor/fixture-definitions))
+- Rotation/orientation data
+- Color and beam properties
+
+#### Workflow Example: Unity to grandMA3
+
+<Steps>
+  <Step title="Export MVR from VRSL">
+    Export your VRSL patch using `VRSL > Export > To MVR`
+  </Step>
+  <Step title="Import to grandMA3">
+    In grandMA3 software:
+    - Go to Patch menu
+    - Import MVR file
+    - Fixtures appear with matching addresses
+  </Step>
+  <Step title="Control VRSL from Console">
+    Use grandMA3 with DMX output to control your VRSL fixtures in real-time
+  </Step>
+</Steps>
+
+<Note>
+  MVR export requires proper [Fixture Definitions](/api/editor/fixture-definitions) to be assigned to your fixtures for best results. Without definitions, fixtures export with generic types.
+</Note>
+
+### Export to PDF (Windows Only)
+
+<Steps>
+  <Step title="Access PDF Export">
+    Navigate to `VRSL > Export > To PDF (Windows)`
+  </Step>
+  <Step title="PDF Generated">
+    A formatted PDF patch sheet is automatically created and saved.
+  </Step>
+  <Step title="Open PDF">
+    The system may automatically open the PDF in your default viewer.
+  </Step>
+</Steps>
+
+#### PDF Patch Sheet Contents
+
+- **Scene Name** and export date
+- **Fixture Table** with columns:
+  - Fixture ID
+  - Fixture Name
+  - Type (from Fixture Definition)
+  - Universe
+  - DMX Channel
+  - Channel Count
+  - Position (Unity coordinates)
+  - Notes/Properties
+
+#### Use Cases
+
+- **Production Documentation**: Print for venue reference
+- **Load-In Sheets**: Distribute to lighting crew
+- **Client Deliverables**: Professional documentation
+- **Archival**: Physical backup of patch
+
+<Warning>
+  PDF export is currently **Windows only** due to platform-specific dependencies. Attempting to export on macOS or Linux will show an error dialog.
+</Warning>
+
+#### Workaround for macOS/Linux
+
+1. Export to JSON format
+2. Use online JSON-to-PDF converters
+3. Or write a custom Python/Node.js script to generate PDFs from JSON
+
+## Patch Data Asset Reference
+
+### VRSL_DMXPatchSettings
+
+The ScriptableObject asset that stores patch data.
+
+**Location**: `Assets/VRSL DMX Patch Folder/VRSL DMX Patch Data_[SceneName].asset`
+
+**Properties**:
+- `targetScene` - Scene reference (for verification)
+- `fixtureData` - Serialized fixture array
+- `exportDate` - Last save/export timestamp
+
+**Methods**:
+- `SetDMXFixtureData()` - Populates data from scene fixtures
+- `LoadDMXFixtureData()` - Applies data to scene fixtures
+- `ToJsonFile(bool prettyPrint)` - Exports to JSON
+- `ToMVRFile()` - Exports to MVR format
+- `ToPDF()` - Exports to PDF (Windows only)
+
+### Inspector View
+
+<Note>
+  Screenshot would show: The VRSL_DMXPatchSettings inspector with fixture data array, scene reference, and export timestamp.
+</Note>
+
+When you select the patch data asset in the Project window:
+- View (but don't edit) saved fixture data
+- See last save timestamp
+- Verify scene association
+
+<Warning>
+  Do not manually edit patch data assets. Always use Save/Load functions to ensure data integrity.
+</Warning>
+
+## Best Practices
+
+### Regular Saves
+
+- Save after initial fixture setup
+- Save before major restructuring
+- Save before Unity version upgrades
+- Save before VRChat world uploads
+
+### Version Control Integration
+
+<Steps>
+  <Step title="Include Patch Folder">
+    Add `Assets/VRSL DMX Patch Folder/` to your Git repository
+  </Step>
+  <Step title="Export JSON on Commits">
+    Before major commits, export to JSON for readable diffs
+  </Step>
+  <Step title="Tag Important Versions">
+    Use Git tags to mark stable patch configurations
+  </Step>
+</Steps>
+
+### Collaboration Workflow
+
+1. **Lead Lighting Designer**: 
+   - Configures patch in Unity
+   - Saves patch data asset
+   - Commits scene + patch asset to Git
+
+2. **Team Members**:
+   - Pull latest scene + patch asset
+   - Load patch data to restore exact configuration
+   - Make local changes, save, commit
+
+3. **External Lighting Programmers**:
+   - Receive MVR export
+   - Import to console/previz software
+   - Program show independent of Unity
+
+### Backup Strategy
+
+- Keep patch data assets in version control
+- Export JSON periodically to cloud storage
+- Export MVR before production/events
+- Generate PDF for physical archival
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Save Patch Data Grayed Out">
+    - Verify VRSL_LocalUIControlPanel exists in scene
+    - Check that scene is saved (not "Untitled")
+    - Ensure scene is not in play mode
+  </Accordion>
+
+  <Accordion title="Load Patch Data Fails Silently">
+    - Check Console for errors
+    - Verify patch data asset still exists
+    - Ensure fixture GameObjects have not been renamed
+    - Confirm fixtures have VRSL component scripts attached
+  </Accordion>
+
+  <Accordion title="MVR Export Has Wrong Coordinates">
+    - MVR uses different coordinate system than Unity
+    - Verify fixture positions in external software
+    - May need to adjust coordinate conversion in VRSL code
+  </Accordion>
+
+  <Accordion title="PDF Export Shows Error on Mac">
+    - PDF export is Windows-only feature
+    - Use JSON export as alternative
+    - Consider cross-platform PDF library for future updates
+  </Accordion>
+
+  <Accordion title="Fixture Definitions Missing in Export">
+    - Verify fixtures have Fixture Type assigned
+    - Check that Fixture Definition file exists
+    - See [Fixture Definitions](/api/editor/fixture-definitions) documentation
+  </Accordion>
+</AccordionGroup>
+
+## Related Documentation
+
+- [VRSL Manager Window](/api/editor/manager-window) - Configure fixtures before exporting
+- [Fixture Definitions](/api/editor/fixture-definitions) - Define fixture types for export
+- [DMX Fixture Component](/api/vrstagelighting-dmx-static) - Fixture component reference

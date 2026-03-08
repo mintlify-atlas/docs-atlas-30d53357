@@ -1,0 +1,482 @@
+---
+title: Video Streaming & Grid Node System
+description: Complete guide to streaming DMX data through video using the VRSL Grid Node
+icon: signal-stream
+---
+
+## Overview
+
+VRSL's video streaming system bridges professional lighting control software with VRChat by encoding DMX data into video pixels. This enables real-time control of hundreds of fixtures from industry-standard tools like MA3, Chamsys, or QLC+.
+
+<Info>
+The Grid Node is a **separate paid application** that runs locally, converting Art-Net/sACN to video that can be streamed to VRChat.
+</Info>
+
+## System Architecture
+
+```
+┌──────────────────┐
+│ Lighting Console │  (MA3, Chamsys, QLC+, etc.)
+└────────┬─────────┘
+         │ Art-Net / sACN
+         ▼
+┌──────────────────┐
+│  VRSL Grid Node  │  (Standalone Application)
+│  - Receives DMX  │
+│  - Encodes to    │
+│    video pixels  │
+│  - 1920×1088     │
+│    output        │
+└────────┬─────────┘
+         │ Video Output
+         ▼
+┌──────────────────┐
+│      OBS         │  (or other streaming software)
+│  - Captures      │
+│    Grid Node     │
+│  - Streams to    │
+│    Twitch/etc    │
+└────────┬─────────┘
+         │ RTMP/Stream
+         ▼
+┌──────────────────┐
+│     VRChat       │
+│  - Video Player  │
+│  - VRSL Shaders  │
+│  - Decode DMX    │
+│  - Render Lights │
+└──────────────────┘
+```
+
+## Grid Node Application
+
+### Installation & Setup
+
+1. Purchase the Grid Node from [Gumroad](https://gumroad.com/l/xYaPu)
+2. Extract and run the application
+3. Configure network settings:
+   - **Art-Net Universe**: 1-9 (or more with RGB mode)
+   - **sACN Universe**: Same as Art-Net
+   - **OSC Port**: 12000 (for Unity editor sync)
+4. Set orientation:
+   - **Vertical Mode**: 13×67 grid (871 channels, 6.7 universes)
+   - **Horizontal Mode**: 120×13 grid (1560 channels, 3 universes)
+
+<Tip>
+Vertical mode is recommended for most setups as it efficiently maps to DMX universes.
+</Tip>
+
+### RGB Expanded Mode
+
+Enable RGB mode to triple capacity:
+
+- **Red Channel**: Universes 1, 4, 7
+- **Green Channel**: Universes 2, 5, 8
+- **Blue Channel**: Universes 3, 6, 9
+
+Total capacity: **Up to 9 universes** (4,608 channels)
+
+```
+Vertical Grid (RGB Mode):
+┌─────────────────────────────────┐
+│ 13 cells × 67 cells = 871 cells│
+│ × 3 RGB channels                │
+│ = 2,613 DMX channels            │
+│ ≈ 5.1 universes                 │
+└─────────────────────────────────┘
+```
+
+### Grid Node Output
+
+The Grid Node outputs a **1920×1088** video texture:
+
+**Vertical Mode:**
+- Grid area: 208×1072 pixels (13×67 cells, 16px each)
+- Remaining space: Black/unused
+
+**Horizontal Mode:**
+- Grid area: 1920×208 pixels (120×13 cells, 16px each)
+- Remaining space: Black/unused
+
+## Unity Editor Integration
+
+During development, the Grid Node can sync directly with Unity:
+
+### GridReader Component
+
+The `GridReader.cs` script receives OSC data from Grid Node:
+
+```csharp
+// From GridReader.cs:16-38
+public class GridReader : MonoBehaviour
+{
+    [Tooltip("Enable if using the grid node in vertical mode")]
+    [SerializeField] bool _IsVertical = true;
+    
+    [Tooltip("Enable if you are using RGB mode to use additional universes")]
+    [SerializeField] bool _ExpandedUniverseSupport = false;
+    
+    [Tooltip("Change if you set a port other than 12000 in the grid node.")]
+    [SerializeField] int _OSCPort = 12000;
+    
+    [Tooltip("Prefix assigned in the VRSL grid node")]
+    [SerializeField] string _OSCPrefix = "/VRSL";
+    
+    [SerializeField] Texture2D _DataBuffer;
+}
+```
+
+### OSC Message Parsing
+
+```csharp
+// GridReader.cs:82-106
+HandleOscPacket callback = delegate (OscPacket packet)
+{
+    int[] _pktData = new int[4];
+    if (_ExpandedUniverseSupport)
+        TekView.TekParse.ParseExpandedMode(packet, ref _pktData, _OSCPrefix);
+    else
+        TekView.TekParse.ParseStandardMode(packet, ref _pktData, _OSCPrefix);
+    
+    if (_pktData[0] > _Buf.Length) return;  // Safety check
+    
+    if (_ExpandedUniverseSupport)
+    {
+        _Buf[_pktData[0] - 1].r = _pktData[1] / 255f;
+        _Buf[_pktData[0] - 1].g = _pktData[2] / 255f;
+        _Buf[_pktData[0] - 1].b = _pktData[3] / 255f;
+    }
+    else
+    {
+        _Buf[_pktData[0] - 1].r = _pktData[1] / 255f;
+        _Buf[_pktData[0] - 1].g = _pktData[1] / 255f;
+        _Buf[_pktData[0] - 1].b = _pktData[1] / 255f;
+    }
+    _NeedsUpdate[_pktData[0] - 1] = true;
+};
+```
+
+### Texture Buffer Update
+
+Changed cells are written to the texture each frame:
+
+```csharp
+// GridReader.cs:148-184
+private void Update()
+{
+    Color[] data = new Color[256];  // 16×16 pixels
+    int index = 0;
+    
+    if (_IsVertical)
+    {
+        for (int y = 0; y < _yLim; y++)
+        {
+            for (int x = 0; x < _xLim; x++)
+            {
+                if (_NeedsUpdate[index])
+                {
+                    _NeedsUpdate[index] = false;
+                    // Fill 16×16 block with same color
+                    for (int datInd = 0; datInd < 256; datInd++) 
+                        data[datInd] = _Buf[index];
+                    _DataBuffer.SetPixels(16 * x, (16 * y), 16, 16, data, 0);
+                }
+                index++;
+            }
+        }
+    }
+    _DataBuffer.Apply();
+}
+```
+
+<Note>
+The GridReader is **editor-only** (`#if UNITY_EDITOR`). In VRChat, the video player provides the texture directly.
+</Note>
+
+## VRChat Video Player Setup
+
+In your VRChat world:
+
+### 1. Add Video Player
+
+Use **USharp Video Player** or similar:
+
+```csharp
+// Example configuration
+VideoPlayer videoPlayer;
+videoPlayer.url = "https://twitch.tv/your_channel";
+videoPlayer.renderMode = VideoRenderMode.RenderTexture;
+videoPlayer.targetTexture = dmxGridRenderTexture;
+```
+
+### 2. Assign Render Texture
+
+Create or assign the DMX grid render texture:
+
+- **Name**: `_Udon_DMXGridRenderTexture` (or legacy `_OSCGridRenderTextureRAW`)
+- **Size**: 1920×1088 or larger
+- **Format**: RGBA32
+- **Filter Mode**: Point (no interpolation)
+- **Wrap Mode**: Clamp
+
+### 3. Global Shader Properties
+
+Set the texture globally so all VRSL shaders can access it:
+
+```csharp
+// Set in Udon or custom script
+Shader.SetGlobalTexture("_Udon_DMXGridRenderTexture", renderTexture);
+Shader.SetGlobalInt("_EnableVerticalMode", verticalMode ? 1 : 0);
+Shader.SetGlobalInt("_EnableCompatibilityMode", 0);  // Use Industry mode
+```
+
+<Warning>
+The texture MUST be set globally. Per-material assignment will not work due to GPU instancing.
+</Warning>
+
+## Streaming Setup
+
+### OBS Configuration
+
+1. **Add Window Capture** or **Display Capture** source
+2. Point to VRSL Grid Node application
+3. Crop to grid area if desired
+4. Set output resolution:
+   - 1920×1080 (standard)
+   - Higher if you need sharper pixels
+5. **Critical**: Set bitrate high enough to prevent compression:
+   - Minimum: 6000 kbps
+   - Recommended: 8000-10000 kbps
+   - Ideal: Lossless recording/local streaming
+
+### Streaming Platform
+
+Options for delivering video to VRChat:
+
+**Twitch**
+- Pros: Low latency (2-4 seconds), reliable
+- Cons: Public stream, compression artifacts
+- Bitrate: Use maximum allowed for your partnership tier
+
+**YouTube Live**
+- Pros: High quality, unlisted streams
+- Cons: Higher latency (5-10 seconds)
+- Bitrate: Up to 51 Mbps for 4K
+
+**Self-Hosted RTMP**
+- Pros: Full control, minimal compression
+- Cons: Requires server, networking knowledge
+- Bitrate: Unlimited
+
+<Tip>
+For best quality, use a self-hosted RTMP server or record locally and use a file-based video player for testing.
+</Tip>
+
+## Compression Handling
+
+Video compression is the biggest challenge for DMX streaming:
+
+### Problems Caused by Compression
+
+1. **Color Banding** - DMX values become imprecise
+2. **Temporal Artifacts** - Fast changes get blurred
+3. **Block Artifacts** - Encoding blocks create false data
+
+### VRSL's Mitigation Strategies
+
+**Interpolation Render Texture**
+
+Smooths values over time:
+
+```hlsl
+// DMXRTShader-DMXInterpolation.shader
+// Reads current and previous frame, outputs lerped result
+```
+
+**Movement-Specific Texture**
+
+Pan/tilt data uses separate, more heavily smoothed texture:
+
+```hlsl
+// Different texture for movement channels
+float inputValue = getValueAtCoords(DMXChannel, _Udon_DMXGridRenderTextureMovement);
+```
+
+**Strobe Timing Generation**
+
+Converts unreliable strobe values to stable phase:
+
+```hlsl
+// DMXRTShader-StrobeTimings.shader
+// Accumulates phase based on strobe speed
+// DMXRTShader-StrobeOutput.shader
+// Generates clean binary output from phase
+```
+
+## Latency Optimization
+
+### End-to-End Latency Breakdown
+
+| Stage | Typical Latency | Optimization |
+|-------|----------------|-------------|
+| Lighting Console → Art-Net | 1-5 ms | Use wired network |
+| Art-Net → Grid Node | 1-10 ms | Local processing |
+| Grid Node → OBS | 16-33 ms | Monitor refresh rate |
+| OBS Encoding | 30-100 ms | Use NVENC, lower preset |
+| Stream Upload | 10-50 ms | Use CDN close to server |
+| Platform Processing | 500-3000 ms | Choose platform carefully |
+| VRChat Download | 100-500 ms | Player's network |
+| Video Player Buffer | 100-1000 ms | Configure buffer size |
+| **Total** | **~750-4500 ms** | 0.75-4.5 seconds |
+
+### Reducing Latency
+
+1. **Use Twitch** - Lowest platform latency
+2. **Enable Low Latency Mode** - In Twitch settings
+3. **Reduce Buffer** - In USharp Video Player settings
+4. **Optimize Encoding** - Use hardware encoding (NVENC/QuickSync)
+5. **Local Network** - Test with local RTMP server first
+
+<Note>
+Some latency is unavoidable. Design your lighting cues with a 1-2 second offset to sync with audio.
+</Note>
+
+## Texture Modes
+
+VRSL supports multiple texture configurations:
+
+### Legacy Textures
+
+```hlsl
+#ifdef _VRSL_LEGACY_TEXTURES
+    Texture2D _OSCGridRenderTexture;           // Interpolated data
+    Texture2D _OSCGridRenderTextureRAW;        // Raw input
+    Texture2D _OSCGridStrobeTimer;             // Strobe phase
+    Texture2D _OSCGridSpinTimer;               // Spin accumulator
+#endif
+```
+
+### Modern Textures
+
+```hlsl
+#ifndef _VRSL_LEGACY_TEXTURES
+    Texture2D _Udon_DMXGridRenderTexture;              // Main data
+    Texture2D _Udon_DMXGridRenderTextureMovement;      // Movement (smoothed)
+    Texture2D _Udon_DMXGridStrobeOutput;               // Binary strobe
+    Texture2D _Udon_DMXGridSpinTimer;                  // Rotation phase
+#endif
+```
+
+<Tip>
+Modern textures separate movement and strobe data for better quality and performance.
+</Tip>
+
+## Testing Without Grid Node
+
+For testing without streaming:
+
+### 1. Use Pre-recorded Video
+
+Record a Grid Node session and play back:
+
+```csharp
+videoPlayer.url = "file:///C:/path/to/recorded_grid.mp4";
+videoPlayer.isLooping = true;
+```
+
+### 2. Use GridReader in Editor
+
+Enable the GridReader component with OSC:
+
+```csharp
+// GridReader automatically creates texture from OSC
+// No streaming required
+```
+
+### 3. Manual Texture Updates
+
+Write a custom script to simulate DMX:
+
+```csharp
+void UpdateDMXChannel(int channel, byte value)
+{
+    int x = (channel - 1) % 13;
+    int y = (channel - 1) / 13;
+    
+    Color color = new Color(value / 255f, value / 255f, value / 255f, 1f);
+    Color[] pixels = new Color[256];
+    for (int i = 0; i < 256; i++) pixels[i] = color;
+    
+    dmxTexture.SetPixels(x * 16, y * 16, 16, 16, pixels);
+    dmxTexture.Apply();
+}
+```
+
+## Advanced Features
+
+### OSC Commands
+
+Grid Node supports OSC control:
+
+```csharp
+// Request full DMX refresh
+var message = new OscMessage("/VRSL/Command/RefreshDMX", 0);
+sender.Send(message);
+```
+
+### MIDI Output
+
+Grid Node can output MIDI alongside video:
+
+- Convert DMX channels to MIDI CC
+- Useful for triggering other software
+- Planned for future VRChat OSC integration
+
+### Multiple Outputs
+
+Run multiple Grid Node instances:
+
+- Different universe ranges
+- Different orientations
+- Multiple worlds simultaneously
+
+## Troubleshooting
+
+### Grid Appears Black
+
+- Check video player is playing
+- Verify render texture is assigned
+- Ensure texture is set globally (not per-material)
+- Check `_EnableVerticalMode` matches Grid Node
+
+### Fixtures Not Responding
+
+- Verify DMX channel assignments
+- Check universe configuration in Grid Node
+- Ensure fixtures have `_EnableDMX` enabled
+- Test with GridReader in editor first
+
+### Jittery Movement
+
+- Increase streaming bitrate
+- Use movement-specific smoothing texture
+- Adjust `_ConeSync` parameter
+- Consider slower, smoother movements
+
+### Incorrect Colors
+
+- Check RGB mode enabled in both Grid Node and fixtures
+- Verify `_NineUniverseMode` setting
+- Ensure color channels are mapped correctly
+- Test with solid colors first
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="DMX System" icon="sliders" href="/concepts/dmx-system">
+    How DMX data is encoded and decoded
+  </Card>
+  <Card title="Shader Architecture" icon="code" href="/concepts/shader-architecture">
+    How shaders read the video texture
+  </Card>
+</CardGroup>

@@ -1,0 +1,273 @@
+---
+title: DMX Static Component
+description: Core DMX-controlled lighting fixture component for VR Stage Lighting
+---
+
+The `VRStageLighting_DMX_Static` component is the primary script for controlling DMX-enabled stage lighting fixtures in VRChat worlds. It provides industry-standard DMX channel control, fixture movement, intensity management, and visual properties.
+
+## Overview
+
+This component enables fixtures to receive DMX data from external lighting control software through the VRSL Grid system. It supports both modern DMX channel addressing and legacy sector-based addressing.
+
+## Inspector Properties
+
+### DMX Settings
+
+<ParamField path="enableDMXChannels" type="bool" default="true">
+  Enables DMX mode for this fixture. When enabled, the fixture will respond to DMX data from the grid.
+</ParamField>
+
+<ParamField path="fixtureID" type="int" default="0">
+  Optional ID number for organizational purposes. Useful for identifying fixtures in Udon scripts and matching IDs from DMX software.
+</ParamField>
+
+<ParamField path="dmxChannel" type="int" default="1">
+  The industry standard DMX channel this fixture begins on. Standard VRSL fixtures use 13 channels.
+</ParamField>
+
+<ParamField path="dmxUniverse" type="int" default="1">
+  The Artnet universe to read DMX data from. Each universe contains 512 channels.
+</ParamField>
+
+<ParamField path="nineUniverseMode" type="bool" default="false">
+  Enables 9-Universe mode for this fixture. The grid will be split by RGB channels with each section and color representing a universe. Only available on Vertical and Horizontal Grid nodes.
+</ParamField>
+
+<ParamField path="useLegacySectorMode" type="bool" default="false">
+  Enables the legacy 'Sector' based method of assigning DMX Channels. Keep unchecked to use industry standard DMX channels.
+</ParamField>
+
+<ParamField path="singleChannelMode" type="bool" default="false">
+  Enables single channel DMX mode for fixtures that only require one channel (e.g., Flasher fixtures).
+</ParamField>
+
+<ParamField path="sector" type="int" default="0">
+  (Legacy Mode) Chooses the DMX address sector. A sector is every 13 channels (Sector 0 = channels 1-13, Sector 1 = channels 14-26, etc.).
+</ParamField>
+
+<ParamField path="Channel" type="int" default="0" range="0-12">
+  (Single Channel Mode) Specifies which of the 13 channels of the current sector to sample from.
+</ParamField>
+
+<ParamField path="legacyGoboRange" type="bool" default="false">
+  Uses legacy GOBO range values for compatibility with older setups.
+</ParamField>
+
+### General Settings
+
+<ParamField path="globalIntensity" type="float" default="1" range="0-1">
+  Sets the overall intensity of the shader. Good for animating or scripting effects. Maximum value is controlled by `finalIntensity`.
+</ParamField>
+
+<ParamField path="finalIntensity" type="float" default="1" range="0-1">
+  Sets the maximum brightness value of Global Intensity. Useful for user-controlled brightness settings via UI.
+</ParamField>
+
+<ParamField path="finalIntensityComponentMode" type="bool" default="false">
+  Choose between setting Final Intensity for all meshes together, or individual mesh types separately.
+</ParamField>
+
+<ParamField path="finalIntensityVolumetric" type="float" default="1" range="0-1">
+  Sets maximum brightness for volumetric meshes only (when Component Mode is enabled).
+</ParamField>
+
+<ParamField path="finalIntensityProjection" type="float" default="1" range="0-1">
+  Sets maximum brightness for projection meshes only (when Component Mode is enabled).
+</ParamField>
+
+<ParamField path="finalIntensityFixture" type="float" default="1" range="0-1">
+  Sets maximum brightness for fixture meshes only (when Component Mode is enabled).
+</ParamField>
+
+<ParamField path="lightColorTint" type="Color" default="Color.white * 2.0f">
+  The main color tint of the light. Leave at default white for pure DMX color control.
+</ParamField>
+
+### Movement Settings
+
+<ParamField path="invertPan" type="bool" default="false">
+  Inverts the pan values (Left/Right movement) for moving head fixtures.
+</ParamField>
+
+<ParamField path="invertTilt" type="bool" default="false">
+  Inverts the tilt values (Up/Down movement) for moving head fixtures.
+</ParamField>
+
+<ParamField path="isUpsideDown" type="bool" default="false">
+  Enable this if the moving head fixture is mounted upside down.
+</ParamField>
+
+### Fixture Settings
+
+<ParamField path="enableAutoSpin" type="bool" default="true">
+  Enables projection spinning (Udon Override Only).
+</ParamField>
+
+<ParamField path="enableStrobe" type="bool" default="true">
+  Enables strobe effects via DMX control.
+</ParamField>
+
+<ParamField path="tiltOffsetBlue" type="float" default="90" range="0-360">
+  Tilt (Up/Down) offset/movement. Directly controls tilt in Udon Mode; acts as an offset in DMX mode.
+</ParamField>
+
+<ParamField path="panOffsetBlueGreen" type="float" default="0" range="0-360">
+  Pan (Left/Right) offset/movement. Directly controls pan in Udon Mode; acts as an offset in DMX mode.
+</ParamField>
+
+<ParamField path="selectGOBO" type="int" default="1" range="1-8">
+  Selects which projection pattern is displayed. This is overridden in DMX mode.
+</ParamField>
+
+### Mesh Settings
+
+<ParamField path="objRenderers" type="MeshRenderer[]" required>
+  Array of mesh renderers that make up the light fixture. At least one mesh is required.
+</ParamField>
+
+<ParamField path="coneWidth" type="float" default="2.5" range="0-5.5">
+  Controls the radius of the mover/spot light cone.
+</ParamField>
+
+<ParamField path="coneLength" type="float" default="8.5" range="0.5-10">
+  Controls the length of the cone of a mover/spot light.
+</ParamField>
+
+<ParamField path="maxConeLength" type="float" default="1" range="0.275-10">
+  Controls the mesh length of the cone of a mover/spot light.
+</ParamField>
+
+<ParamField path="maxMinPan" type="float" default="180">
+  Maximum pan angle range for the fixture.
+</ParamField>
+
+<ParamField path="maxMinTilt" type="float" default="-180">
+  Maximum tilt angle range for the fixture.
+</ParamField>
+
+## Configuration Steps
+
+### Basic DMX Setup
+
+1. Add the `VRStageLighting_DMX_Static` component to your fixture GameObject
+2. Assign the fixture's mesh renderers to the `objRenderers` array
+3. Set the `dmxChannel` to the starting channel for this fixture
+4. Set the `dmxUniverse` to match your DMX grid configuration
+5. Ensure `enableDMXChannels` is checked
+
+### Legacy Sector Mode
+
+If you're using older VRSL setups:
+
+1. Enable `useLegacySectorMode`
+2. Set the `sector` value instead of `dmxChannel`
+3. Each sector represents 13 channels (Sector 0 = Ch 1-13, Sector 1 = Ch 14-26, etc.)
+
+### Movement Configuration
+
+For moving head fixtures:
+
+1. Adjust `panOffsetBlueGreen` and `tiltOffsetBlue` to correct the default position
+2. Use `invertPan` and `invertTilt` if movement directions are reversed
+3. Enable `isUpsideDown` if the fixture is mounted inverted
+4. Adjust `maxMinPan` and `maxMinTilt` to limit movement ranges
+
+## Example Setup
+
+### Standard Moving Head
+
+```
+DMX Settings:
+  enableDMXChannels: true
+  dmxChannel: 1
+  dmxUniverse: 1
+  
+General Settings:
+  globalIntensity: 1
+  finalIntensity: 1
+  lightColorTint: (2, 2, 2, 1)
+  
+Movement Settings:
+  tiltOffsetBlue: 90
+  panOffsetBlueGreen: 0
+  
+Fixture Settings:
+  coneWidth: 2.5
+  coneLength: 8.5
+```
+
+### Single Channel Flasher
+
+```
+DMX Settings:
+  enableDMXChannels: true
+  singleChannelMode: true
+  dmxChannel: 100
+  dmxUniverse: 1
+  
+General Settings:
+  globalIntensity: 1
+  finalIntensity: 1
+```
+
+## Integration with Other Components
+
+### VRSL Grid
+
+The DMX Static component reads data from the VRSL Grid system:
+- Grid nodes must be configured with matching universe settings
+- Use Horizontal or Vertical grid modes for multi-universe setups
+- Enable `nineUniverseMode` on both grid and fixtures for RGB universe splitting
+
+### Local UI Control Panel
+
+The component integrates with `VRSL_LocalUIControlPanel` for:
+- Global intensity control
+- Quality settings for volumetric and projection meshes
+- DMX mode switching (Horizontal/Vertical/Legacy)
+- Per-mesh-type intensity control when using Component Mode
+
+### Audio Link Integration
+
+While this is the DMX component, you can switch fixtures between DMX and AudioLink modes using:
+- The Control Panel to enable/disable DMX rendering
+- Udon scripts to toggle `enableDMXChannels` at runtime
+
+## Public Methods
+
+### _UpdateInstancedProperties()
+
+Forces an update of all material properties. Call this after changing properties via Udon script.
+
+### _SetProps()
+
+Initializes the MaterialPropertyBlock. Called automatically on Start.
+
+## Udon Script Properties
+
+Access these properties from Udon scripts:
+
+- `LightColorTint` - Get/Set the light color
+- `GlobalIntensity` - Get/Set global intensity (0-1)
+- `FinalIntensity` - Get/Set maximum intensity (0-1)
+- `ConeWidth` - Get/Set cone radius
+- `ConeLength` - Get/Set cone length
+- `SelectGOBO` - Get/Set selected projection (1-8)
+- `Pan` - Get/Set pan angle (0-360)
+- `Tilt` - Get/Set tilt angle (0-360)
+- `IsDMX` - Get/Set DMX enabled state
+- `InvertPan` - Get/Set pan inversion
+- `InvertTilt` - Get/Set tilt inversion
+
+## Performance Notes
+
+- Supports up to 5 mesh renderers per fixture for optimal performance
+- Uses MaterialPropertyBlock for GPU instancing
+- Component Mode allows separate intensity control for volumetric, projection, and fixture meshes
+- Strobe effects can be disabled globally via Control Panel for performance
+
+## See Also
+
+- [AudioLink Static Component](/components/audiolink-static) - AudioLink-controlled fixtures
+- [Grid Reader](/components/grid-reader) - OSC communication for DMX data
+- [Local UI Control Panel](/components/local-ui-control-panel) - User controls and settings

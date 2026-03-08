@@ -1,80 +1,470 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart Guide
+description: Get started with VR Stage Lighting in minutes - from first fixture to your first light show
 ---
 
-## Get started in three steps
+This guide will walk you through setting up your first VR Stage Lighting fixture and understanding the core concepts of the system.
 
-Get your documentation site running locally and make your first customization.
+## Project Setup
 
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+<Steps>
+  <Step title="Create a New Scene">
+    Start with a clean scene or open one of the included example scenes.
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    <CodeGroup>
+    ```unity New Scene
+    File → New Scene → Basic (Built-in Render Pipeline)
+    Save as: Assets/MyVRSLScene.unity
+    ```
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+    ```unity Example Scene
+    Packages/VR Stage Lighting/Runtime/Example Scenes/
+    ├── AudioLink-Scenes/
+    └── DMX-EditorViaOSCScenes/
+    ```
+    </CodeGroup>
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    <Note>
+      VRSL works with the Built-in Render Pipeline. URP support was added in version 2.8.0 but Built-in is recommended.
+    </Note>
+  </Step>
+  
+  <Step title="Add a Directional Light for Depth">
+    VRSL requires a depth texture for its projection and volumetric effects.
+    
+    **Option A - Use VRSL Prefab (Recommended):**
+    
+    Drag the prefab into your scene:
+    ```
+    Packages/VR Stage Lighting/Runtime/Prefabs/
+    └── Directional Light (For Depth).prefab
+    ```
+    
+    **Option B - Configure Manually:**
+    
+    1. Create: GameObject → Light → Directional Light
+    2. Set **Shadow Type** to "Soft Shadows" or "Hard Shadows"
+    3. Enable shadows (required for depth texture generation)
+    
+    <Warning>
+      Without a depth-casting light, VRSL volumetric and projection effects will not work. This is the most common setup mistake.
+    </Warning>
+  </Step>
+  
+  <Step title="Add AudioLink (For Audio-Reactive Lights)">
+    If you plan to use audio-reactive lighting:
+    
+    1. Navigate to: `Packages/VR Stage Lighting/Runtime/Prefabs/AudioLink/`
+    2. Drag **AudioLink-VRSLEdition.prefab** into your scene
+    3. Add an audio source with music (optional for testing)
+    
+    <Info>
+      The VRSL Edition of AudioLink includes optimizations and features specific to stage lighting. You can also use the standard AudioLink prefab.
+    </Info>
+  </Step>
+  
+  <Step title="Add the VRSL Control Panel (Recommended)">
+    The Local UI Control Panel provides user controls for light intensity and settings.
+    
+    Drag into scene:
+    ```
+    Packages/VR Stage Lighting/Runtime/Prefabs/
+    └── VRSL-LocalUIControlPanel.prefab
+    ```
+    
+    Features:
+    - Per-light-type intensity control
+    - Master brightness slider
+    - Bloom intensity control
+    - Global DMX strobe toggle (accessibility)
+    - Depth light and 3D noise toggles
+  </Step>
+</Steps>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+## Your First Lighting Fixture
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+### AudioLink Fixtures (Audio-Reactive)
 
-### Step 3: Go live
+Let's start with an audio-reactive spotlight - the easiest way to see VRSL in action.
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+<Steps>
+  <Step title="Choose a Fixture Type">
+    AudioLink fixtures are located in:
+    ```
+    Packages/VR Stage Lighting/Runtime/Prefabs/AudioLink/
+    ```
+    
+    Common fixture types:
+    
+    <CardGroup cols={2}>
+      <Card title="Spotlight" icon="circle">
+        **VRSL-AudioLink-Mover-Spotlight.prefab**
+        
+        Moving head spotlight with gobo projection and volumetric beam.
+      </Card>
+      
+      <Card title="Wash Light" icon="sun">
+        **VRSL-AudioLink-Mover-Washlight.prefab**
+        
+        Wide beam wash light for flooding areas with color.
+      </Card>
+      
+      <Card title="Par Light" icon="lightbulb">
+        **VRSL-AudioLink-Static-ParLight.prefab**
+        
+        Static RGB par can for general stage lighting.
+      </Card>
+      
+      <Card title="Laser" icon="waveform">
+        **VRSL-AudioLink-BasicLaser.prefab**
+        
+        Animated laser effect that reacts to audio.
+      </Card>
+    </CardGroup>
+  </Step>
+  
+  <Step title="Place the Fixture">
+    Drag **VRSL-AudioLink-Mover-Spotlight.prefab** into your scene.
+    
+    Position it above your play area:
+    - **Position:** (0, 5, 0)
+    - **Rotation:** (45, 0, 0) - angled downward
+    
+    <Note>
+      Moving head fixtures (Mover-Spotlight, Mover-Washlight) can pan and tilt. Static fixtures only change color and intensity.
+    </Note>
+  </Step>
+  
+  <Step title="Configure the Fixture">
+    Select the fixture in the Hierarchy and examine the Inspector.
+    
+    **Key Settings in the VRSL_AudioLink Component:**
+    
+    <AccordionGroup>
+      <Accordion title="Audio Reaction Settings">
+        - **Band:** Which frequency band to react to (Bass, Low Mid, High Mid, Treble)
+        - **Delay:** Timing offset for the audio reaction
+        - **Intensity Multiplier:** Overall brightness scale
+      </Accordion>
+      
+      <Accordion title="Color Settings">
+        - **Color Tint:** Base color for the light
+        - **Use Theme Colors:** Use AudioLink's color chord system
+        - **Color Chord Slot:** Which theme color to use (0-3)
+      </Accordion>
+      
+      <Accordion title="Movement (Movers Only)">
+        - **Pan Tilt Target:** Optional transform to point at
+        - **Movement Range:** How much the light can move
+        - **Movement Speed:** Speed of pan/tilt motion
+      </Accordion>
+      
+      <Accordion title="Component Intensity">
+        - **Fixture Mesh:** Brightness of the fixture housing
+        - **Projection:** Brightness of the projected light cone
+        - **Volumetric:** Brightness of the volumetric beam
+        
+        <Note>
+          These replace the legacy "Final Intensity" slider in version 2.6.2+
+        </Note>
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+  
+  <Step title="Add a Pan/Tilt Target (Optional)">
+    For moving head fixtures, add a target to follow:
+    
+    1. Drag **PanTiltTarget.prefab** into the scene
+    2. Position it where you want the light to point
+    3. Assign it to the fixture's **Pan Tilt Target** field
+    
+    The light will automatically aim at this target.
+  </Step>
+  
+  <Step title="Test in Play Mode">
+    Press Play in Unity and play some music through your audio source.
+    
+    **What to expect:**
+    - Light intensity pulses with the selected frequency band
+    - Colors may shift if using theme colors
+    - Moving heads will pan/tilt toward their target
+    - Volumetric beams visible in the scene
+    
+    <Tip>
+      If you don't see anything, check that:
+      1. AudioLink is in the scene and receiving audio
+      2. The directional light has shadows enabled
+      3. Your camera can see the light's output
+    </Tip>
+  </Step>
+</Steps>
 
-## Next steps
+## DMX Fixtures (Video-Based Control)
 
-Now that you have your docs running, explore these key features:
+For advanced users who want real-time control via DMX512/Artnet.
 
-<CardGroup cols={2}>
+<Warning>
+  DMX fixtures require additional setup including video players and the VRSL Grid Node application. AudioLink fixtures are recommended for beginners.
+</Warning>
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+<Steps>
+  <Step title="Choose a DMX Mode">
+    VRSL supports three DMX grid orientations:
+    
+    - **Horizontal Mode** (recommended for most setups)
+    - **Vertical Mode** (legacy compatibility)
+    - **Legacy Mode** (deprecated)
+    
+    Prefabs are organized by mode:
+    ```
+    Packages/VR Stage Lighting/Runtime/Prefabs/DMX/
+    ├── Horizontal Mode/
+    ├── Vertical Mode/
+    └── Legacy Mode/
+    ```
+  </Step>
+  
+  <Step title="Add a DMX Grid Reader">
+    The grid reader decodes video into DMX data.
+    
+    For Horizontal Mode:
+    ```
+    Packages/VR Stage Lighting/Runtime/Prefabs/DMX/GridReader/
+    └── VRSL-DMX-TekOSCGridReader-H.prefab
+    ```
+    
+    <Info>
+      TekOSC is the default DMX reader in VRSL 2.5.0+. Video player-based readers (VideoTXL, ProTV) are available as separate packages.
+    </Info>
+  </Step>
+  
+  <Step title="Place a DMX Fixture">
+    DMX fixtures come in various channel configurations:
+    
+    - **13-Channel:** Full control (color, intensity, movement, gobo, strobe)
+    - **5-Channel:** Simplified (color, intensity, basic features)
+    - **1-Channel:** Intensity only (flashers, disco balls)
+    
+    Example - 13CH Moving Spotlight:
+    ```
+    Packages/VR Stage Lighting/Runtime/Prefabs/DMX/Horizontal Mode/
+    └── VRSL-DMX-Mover-Spotlight-H-13CH.prefab
+    ```
+  </Step>
+  
+  <Step title="Configure DMX Addressing">
+    Select the fixture and set its **DMX Channel** in the inspector.
+    
+    - Each fixture needs a unique DMX start address
+    - 13CH fixtures use 13 consecutive channels
+    - Maximum ~500 channels per universe (depends on grid resolution)
+    
+    <Note>
+      The VRSL Manager Window (under the VRSL menu) provides tools for managing DMX patches and exporting patch data to MVR, JSON, or PDF.
+    </Note>
+  </Step>
+</Steps>
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+## Understanding VRSL Components
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+### Light Fixture Anatomy
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+Each VRSL fixture consists of up to three visual components:
 
+<CardGroup cols={3}>
+  <Card title="Fixture Mesh" icon="cube">
+    The physical light housing
+    
+    - Emissive material
+    - Shows fixture is "on"
+    - Controlled by Component Intensity slider
+  </Card>
+  
+  <Card title="Projection" icon="circle-half-stroke">
+    The projected light on surfaces
+    
+    - Screen-space or surface shader
+    - Shows where light hits geometry
+    - Supports gobos and patterns
+  </Card>
+  
+  <Card title="Volumetric" icon="cloud">
+    The visible beam in air
+    
+    - 3D mesh with volumetric shader
+    - GPU-instanced for performance
+    - Optional 3D noise texture
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+### Shader Types
+
+VRSL uses custom shaders for maximum performance:
+
+- **No real-time Unity lights** - all effects are shader-based
+- **GPU instancing** - efficient rendering of multiple fixtures
+- **Batching compatible** - reduces draw calls
+- **Hardware-accelerated** - computation happens on the GPU
+
+<Info>
+  This is why VRSL can render dozens or even hundreds of fixtures with minimal performance impact compared to traditional Unity lighting.
+</Info>
+
+## Common Workflow: Building a Light Show
+
+<Steps>
+  <Step title="Plan Your Layout">
+    Sketch out where lights will go:
+    - Front lights (audience POV)
+    - Back lights (behind performers)
+    - Side lights (wings)
+    - Top lights (overhead wash)
+  </Step>
+  
+  <Step title="Choose Fixture Types">
+    Select appropriate fixtures:
+    - **Movers** for dynamic movement
+    - **Pars** for static washes
+    - **Strobes** for impact moments
+    - **Lasers** for energy and atmosphere
+  </Step>
+  
+  <Step title="Position and Aim">
+    Place fixtures in your scene:
+    - Use PanTiltTargets for movers
+    - Angle static fixtures manually
+    - Test coverage in Play mode
+  </Step>
+  
+  <Step title="Configure Audio Reaction">
+    Set up reactive behavior:
+    - **Bass** → strobes, impacts
+    - **Low Mid** → rhythmic elements
+    - **High Mid** → melodies
+    - **Treble** → cymbals, hi-hats
+  </Step>
+  
+  <Step title="Adjust Colors and Intensity">
+    Fine-tune the look:
+    - Use AudioLink theme colors for cohesion
+    - Adjust component intensities
+    - Balance volumetric visibility
+  </Step>
+  
+  <Step title="Optimize Performance">
+    Use the VRSL Control Panel:
+    - Disable depth light for Quest compatibility
+    - Toggle 3D noise if performance is low
+    - Use lower-poly volumetric meshes if needed
+  </Step>
+</Steps>
+
+## Tips for Success
+
+<AccordionGroup>
+  <Accordion title="Start Simple">
+    Begin with 3-5 AudioLink fixtures before adding complexity:
+    - 2x spotlights
+    - 2x wash lights
+    - 1x strobe or laser
+    
+    This teaches the basics without overwhelming your scene.
+  </Accordion>
+  
+  <Accordion title="Use the Control Panel">
+    Always include the VRSL-LocalUIControlPanel in your scene:
+    - Players can adjust brightness to their preference
+    - Accessibility features (strobe disable)
+    - Performance toggles
+  </Accordion>
+  
+  <Accordion title="Test on Real Hardware">
+    Unity Editor performance ≠ VRChat performance:
+    - Test in VRChat (local test builds)
+    - Check various PC specs
+    - Test with Quest if targeting cross-platform
+  </Accordion>
+  
+  <Accordion title="Study the Example Scenes">
+    The included example scenes show best practices:
+    ```
+    Packages/VR Stage Lighting/Runtime/Example Scenes/
+    ├── AudioLink-Scenes/          ← Start here!
+    ├── DMX-EditorViaOSCScenes/
+    └── DMX-AvatarTesting/
+    ```
+  </Accordion>
+  
+  <Accordion title="Manage Materials">
+    Use the VRSL menu utility to generate unique materials:
+    
+    **VRSL → Utilities → Generate Unique VRSL Materials**
+    
+    This prevents your settings from being overwritten during VRSL updates.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Fixture Types" icon="lightbulb" href="/fixtures/overview">
+    Learn about all available fixture types and their capabilities
+  </Card>
+  
+  <Card title="AudioLink Integration" icon="waveform" href="/guides/audiolink-setup">
+    Deep dive into audio-reactive lighting setup
+  </Card>
+  
+  <Card title="DMX Control" icon="sliders" href="/guides/dmx-setup">
+    Set up real-time DMX control via Artnet
+  </Card>
+  
+  <Card title="Performance" icon="gauge" href="/guides/performance-optimization">
+    Optimize your lighting setup for best performance
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="I don't see any light output">
+    **Most common causes:**
+    
+    1. **No depth light:** Add the Directional Light prefab with shadows enabled
+    2. **AudioLink not working:** Ensure AudioLink prefab is in scene and receiving audio
+    3. **Component intensity too low:** Check the Fixture/Projection/Volumetric sliders
+    4. **Looking from the wrong angle:** Volumetrics are directional - view from the side
+  </Accordion>
+  
+  <Accordion title="Lights are flickering or glitching">
+    **Possible fixes:**
+    
+    1. Check that only ONE directional light has shadows enabled
+    2. Ensure depth texture is being generated (Camera depth mode)
+    3. Verify all VRSL CRT (Custom Render Texture) assets are present
+    4. Check for AudioLink errors in the console
+  </Accordion>
+  
+  <Accordion title="Performance is poor">
+    **Optimization steps:**
+    
+    1. Reduce number of active fixtures
+    2. Disable 3D noise via Control Panel
+    3. Use lower-poly volumetric meshes (VRSL Manager Window)
+    4. Disable depth light if not needed
+    5. Reduce component intensities (less visible = less expensive)
+  </Accordion>
+  
+  <Accordion title="Moving heads aren't moving">
+    **Check these:**
+    
+    1. Ensure a PanTiltTarget is assigned
+    2. Movement Range is not set to 0
+    3. For DMX fixtures: verify grid reader is working
+    4. For AudioLink: check that audio is playing and being detected
+  </Accordion>
+</AccordionGroup>
+
+<Success>
+  **You're ready to create amazing lighting experiences!** Start with a few AudioLink fixtures, experiment with colors and placement, and expand from there. The VRSL community on Discord is ready to help if you get stuck.
+</Success>

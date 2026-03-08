@@ -1,0 +1,326 @@
+---
+title: 'VRSL Manager Window'
+description: 'Central control panel for managing all VRSL fixtures and settings in your Unity scene'
+icon: 'sliders'
+---
+
+## Overview
+
+The VRSL Manager Window (also known as the VRSL Control Panel) is the central hub for managing and configuring all VR Stage Lighting fixtures in your Unity scene. It provides a comprehensive interface for:
+
+- Managing DMX and AudioLink fixtures
+- Spawning lighting prefabs
+- Batch editing fixture properties
+- Configuring global lighting settings
+- Accessing CRT material settings
+
+## Accessing the Manager Window
+
+<Steps>
+  <Step title="Open from Unity Menu">
+    Navigate to `VRSL > Control Panel` in the Unity menu bar.
+  </Step>
+  <Step title="Window Opens Centered">
+    The Manager Window opens centered on your Unity editor with a minimum size of 925x700 pixels.
+  </Step>
+</Steps>
+
+<Note>
+  The VRSL Manager Window requires a **VRSL_LocalUIControlPanel** component in your scene to function. If none is found, some features will be disabled.
+</Note>
+
+## Main Interface Sections
+
+### Header
+
+Displays the VRSL logo and quick links to:
+- **Discord** - Join the VRSL community
+- **Twitter** - Follow AcChosen for updates
+- **GitHub** - Access the official repository
+- **Version Number** - Shows current VRSL version
+
+### DMX Fixtures Section
+
+Manage all DMX-controlled fixtures in your scene.
+
+#### Features
+
+<AccordionGroup>
+  <Accordion title="Fixture Organization">
+    - Fixtures are automatically organized by **Universe** (1-9)
+    - Each universe can be expanded/collapsed independently
+    - Fixtures are sorted by DMX channel within each universe
+    - Shows total fixture count per universe
+  </Accordion>
+
+  <Accordion title="Individual Fixture Controls">
+    Each fixture foldout includes:
+    - **DMX Channel** - Universe and channel assignment
+    - **Fixture ID** - Unique identifier for patch data
+    - **Intensity Controls** - Global and final intensity
+    - **Color Tint** - Apply color correction
+    - **Movement Settings** - Pan/tilt inversion and ranges
+    - **Special Features** - Strobe, auto-spin, GOBO selection
+    - **Cone Dimensions** - Width, length for volumetric effects
+  </Accordion>
+
+  <Accordion title="Batch Operations">
+    - **Apply/Reset Changes** - Mass apply or reset fixture modifications
+    - **Mass Pan/Tilt Range** - Set movement ranges for all fixtures
+    - **Mass Fixture IDs** - Auto-assign sequential IDs based on prefab groups
+    - **Extended Universe Toggle** - Enable/disable 9-universe mode
+    - **Copy/Paste Settings** - Copy properties from one fixture to others
+  </Accordion>
+</AccordionGroup>
+
+#### DMX Fixture Workflow
+
+<Steps>
+  <Step title="Select Fixtures">
+    Expand universes to view fixtures. Click individual fixture foldouts to edit.
+  </Step>
+  <Step title="Edit Properties">
+    Modify DMX channels, intensities, colors, or movement settings as needed.
+  </Step>
+  <Step title="Apply Changes">
+    Click **Apply Changes** to commit modifications or **Reset** to revert.
+  </Step>
+  <Step title="Test in Scene">
+    Changes update in real-time. Use Scene view to verify fixture behavior.
+  </Step>
+</Steps>
+
+<Tip>
+  Use the **Mass Fixture IDs** button to automatically organize fixture IDs by prefab type, starting at ID 100 and incrementing by 100 for each prefab variant.
+</Tip>
+
+### AudioLink Fixtures Section
+
+Manage AudioLink-reactive fixtures and lasers.
+
+#### Features
+
+- **Band Organization** - Fixtures grouped by AudioLink frequency band (Bass, Low Mid, High Mid, Treble)
+- **Band Settings** - Configure frequency response and multipliers
+- **Color Options** - ColorChord, texture sampling, theme color sampling
+- **Intensity Control** - Global and final intensity per fixture
+- **Laser-Specific Controls** - Cone rotation, flatness, laser count, scroll speed
+
+#### AudioLink Properties
+
+| Property | Description |
+|----------|-------------|
+| **Enable AudioLink** | Toggle AudioLink reactivity |
+| **Band** | Frequency band to react to (Bass/Low Mid/High Mid/Treble) |
+| **Delay** | Frame delay for synchronization (0-127) |
+| **Band Multiplier** | Intensity multiplier for frequency response |
+| **ColorChord** | Enable procedural color generation from audio |
+| **Texture Sampling** | Sample colors from a texture at specific UV coordinates |
+| **Theme Colors** | Use AudioLink theme color slots |
+
+### Fixture Spawning Section
+
+<Note>
+  Screenshot would show: The fixture spawning interface with categorized prefab buttons for DMX and AudioLink fixtures.
+</Note>
+
+#### DMX Fixture Prefabs
+
+Spawn DMX-controlled lighting fixtures:
+
+- **Spotlight** - Moving head with narrow beam (Horizontal/Vertical/Legacy modes)
+- **Washlight** - Moving head with wide beam
+- **Blinder** - High-intensity audience blinder
+- **Flasher** - Strobe/flash effects
+- **PAR Light** - Static color wash
+- **Lightbar** - Multi-fixture bar
+- **Disco Ball** - Rotating mirror ball effect
+- **Laser** - DMX-controlled laser effects
+
+<Tip>
+  **GI Variants**: If VRSL-DMX-GI addon is installed, enable the "VRSL GI" toggle to spawn Global Illumination variants that interact with Unity's GI system.
+</Tip>
+
+#### AudioLink Fixture Prefabs
+
+Spawn audio-reactive fixtures:
+
+- All standard fixture types with "_a" suffix
+- **Laser (AudioLink)** - Audio-reactive laser grid
+
+#### Screen/Controller Prefabs
+
+- **OSC Grid Reader** - TekOSC-based DMX reader (Horizontal/Vertical)
+- **uDesktop** - Desktop Duplication DMX screens (requires addon)
+- **USharpVideo** - Video player-based DMX (requires addon)
+- **ProTV** - ProTV integration (requires addon)
+- **VideoTXL** - VideoTXL integration (requires addon)
+- **AudioLink Controller** - AudioLink control interface
+- **Depth Light** - Directional light for depth texture
+
+#### Stencil Mask Objects
+
+Spawn geometry to mask/block VRSL volumetric and projection effects:
+
+- Cube, Cylinder, Capsule, Sphere masks
+
+### Options & Global Settings
+
+#### Scene Settings
+
+<AccordionGroup>
+  <Accordion title="Depth Light Dependency">
+    - **Toggle**: Enable/disable depth texture requirement
+    - **Purpose**: Allows Quest compatibility by removing depth light dependency
+    - **Effect**: Disables projection/disco ball meshes when off
+  </Accordion>
+
+  <Accordion title="Volumetric Noise">
+    - **Toggle**: Enable/disable 3D noise on volumetric shaders
+    - **Purpose**: Improves performance on Quest/lower-end hardware
+    - **Effect**: Switches from 3D to 2D noise patterns
+  </Accordion>
+
+  <Accordion title="Volumetric Mesh Quality">
+    - **Options**: High, Medium, Low
+    - **Purpose**: Adjust mesh complexity for performance
+    - **Requires**: VRSL Manager Window Settings file with alternate mesh references
+  </Accordion>
+
+  <Accordion title="Extended Universe Mode">
+    - **Toggle**: Enable 9-universe mode (vs 4-universe)
+    - **Range**: Channels 1-4096 (9 universes) or 1-2048 (4 universes)
+    - **Note**: Must match DMX reader configuration
+  </Accordion>
+
+  <Accordion title="DMX Gizmo Display">
+    - **Options**: None, Channel Only, Universe + Channel
+    - **Purpose**: Display DMX addressing in Scene view
+    - **Location**: Fixture gizmos in 3D space
+  </Accordion>
+</AccordionGroup>
+
+#### CRT Material Editor
+
+<Note>
+  Screenshot would show: The CRT material editor with dropdown for selecting different interpolation materials.
+</Note>
+
+Edit Custom Render Texture materials directly from the Control Panel:
+
+- **Material Selector**: Choose from DMX or AudioLink CRT materials
+- **Categories**:
+  - Intensity+Color (Horizontal/Vertical/Legacy)
+  - Movement (Horizontal/Vertical/Legacy)
+  - Spin (Horizontal/Vertical/Legacy)
+  - Strobe Timing (Horizontal/Vertical/Legacy)
+  - Strobe Output (Horizontal/Vertical/Legacy)
+  - AudioLink Interpolation
+
+**Use Cases**:
+- Adjust movement smoothing ranges
+- Configure strobe speed min/max
+- Modify DMX interpolation behavior
+- Fine-tune signal detection thresholds
+
+<Warning>
+  Changes to CRT materials affect ALL fixtures using that material. Test thoroughly after modifications.
+</Warning>
+
+## Advanced Features
+
+### Pan/Tilt Range Configuration
+
+Configure movement limits for moving head fixtures:
+
+<Steps>
+  <Step title="Set Pan Range">
+    Enter desired pan range (e.g., 180° for 180° left/right)
+  </Step>
+  <Step title="Set Tilt Range">
+    Enter desired tilt range (e.g., -180° for 180° up/down)
+  </Step>
+  <Step title="Apply to All Fixtures">
+    Click **Mass Apply Pan Range** or **Mass Apply Tilt Range**
+  </Step>
+</Steps>
+
+Quick preset buttons available: 90°, 180°, 270°, 540°
+
+### Copy/Paste Fixture Settings
+
+<Steps>
+  <Step title="Select Source Fixture">
+    Open the fixture foldout you want to copy from
+  </Step>
+  <Step title="Copy Settings">
+    Click the **Copy** button in the fixture controls
+  </Step>
+  <Step title="Select Target Fixture(s)">
+    Open target fixture foldouts
+  </Step>
+  <Step title="Paste Settings">
+    Click **Paste** to apply copied settings
+  </Step>
+</Steps>
+
+<Note>
+  Copy/paste respects fixture type. DMX properties only copy to DMX fixtures, AudioLink properties only to AudioLink fixtures.
+</Note>
+
+### Scene Hierarchy Monitoring
+
+The Manager Window automatically:
+- Detects new fixtures added to the scene
+- Removes references to deleted fixtures
+- Updates fixture lists when hierarchy changes
+- Refreshes on play mode state changes
+
+## Keyboard Shortcuts
+
+None by default. Access via menu: `VRSL > Control Panel`
+
+## Performance Considerations
+
+- The Manager Window queries all scene objects on open and hierarchy changes
+- Large scenes (100+ fixtures) may experience slight lag on refresh
+- Close the window when not actively editing to free editor resources
+- CRT material modifications are global and permanent until reverted
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="No Fixtures Appear in Lists">
+    - Verify VRSL_LocalUIControlPanel exists in scene
+    - Check "Use DMX" or "Use AudioLink" toggles on the control panel
+    - Ensure fixtures have VRSL scripts attached
+    - Click Refresh or reopen the Manager Window
+  </Accordion>
+
+  <Accordion title="Changes Don't Apply">
+    - Click **Apply Changes** button explicitly
+    - Check for script errors in Console
+    - Verify fixtures are not in prefab edit mode
+    - Ensure scene is not in play mode (some operations disabled)
+  </Accordion>
+
+  <Accordion title="Prefabs Won't Spawn">
+    - Check Console for missing GUID errors
+    - Verify VRSL package is properly installed via VCC
+    - Ensure required addons are installed for addon prefabs
+    - Try reimporting VRSL package
+  </Accordion>
+
+  <Accordion title="CRT Material Editor Blank">
+    - Verify CRT materials exist in package
+    - Check material assignments on control panel
+    - Reinstall VRSL package if materials missing
+  </Accordion>
+</AccordionGroup>
+
+## Related Documentation
+
+- [DMX Patch Exporter](/api/editor/dmx-patch-exporter) - Export patch data
+- [Fixture Definitions](/api/editor/fixture-definitions) - Create fixture type definitions
+- [VRSL Control Panel Component](/api/vrsl-localuicontrolpanel) - Runtime control panel
+- [DMX Fixture Component](/api/vrstagelighting-dmx-static) - DMX fixture reference

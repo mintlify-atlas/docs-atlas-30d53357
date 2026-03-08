@@ -1,0 +1,695 @@
+---
+title: Creating Custom Fixtures
+description: Design and implement your own custom light fixtures with VR Stage Lighting shaders and scripts
+---
+
+## Overview
+
+VRSL's modular architecture allows you to create custom light fixtures using the existing shader and script framework. This guide covers creating fixtures from scratch or modifying existing ones.
+
+<Note>
+Custom fixtures use the same VRSL shaders and scripts as built-in fixtures, ensuring consistent performance and compatibility.
+</Note>
+
+## Fixture Architecture
+
+A VRSL fixture consists of:
+- **Fixture Body**: Physical housing mesh
+- **Volumetric Mesh**: Light beam/cone mesh  
+- **Projection Mesh**: Gobos/patterns (optional)
+- **VRSL Script**: DMX or AudioLink control component
+- **Materials**: Using VRSL shaders
+
+### Fixture Types
+
+**Static Fixtures:**
+- PAR cans, wash lights, blinders
+- No movement capability
+- Simpler setup
+
+**Moving Head Fixtures:**  
+- Spotlights, wash movers
+- Pan/tilt movement
+- Requires head/base separation
+
+**Special Fixtures:**
+- Disco balls, lasers, light bars
+- Unique behaviors
+- Custom shader features
+
+## Prerequisites
+
+### Knowledge Requirements
+- Basic Unity editor skills
+- Understanding of Unity materials and shaders
+- 3D modeling (if creating custom models)
+- Basic understanding of DMX channels (for DMX fixtures)
+
+### Tools
+- Unity 2019.4 or newer
+- VRSL package installed
+- 3D modeling software (Blender, Maya, etc.) - optional
+- Texture editing software (Photoshop, Substance) - optional
+
+## Creating a Static Fixture
+
+Let's create a simple static PAR light from scratch:
+
+<Steps>
+
+### Create Base GameObject
+
+1. In Unity Hierarchy, create empty GameObject
+2. Name it "MyCustomPAR-DMX"
+3. Position at origin (0, 0, 0)
+4. This is your fixture root
+
+### Add Fixture Body Mesh
+
+1. Create child GameObject: "Body"
+2. Add **Mesh Filter** component
+3. Add **Mesh Renderer** component  
+4. Assign your fixture body mesh (or use Unity primitive)
+5. Create/assign material using **VRSL-StandardSurface** shader
+
+**Example Body Setup:**
+```
+MyCustomPAR-DMX
+└── Body (MeshRenderer)
+    └── Material: Using VRSL-StandardSurface-Opaque
+```
+
+<Tip>
+For initial testing, use a Unity Cylinder primitive. Replace with custom model later.
+</Tip>
+
+### Add Volumetric Light Cone
+
+1. Create child GameObject: "Volumetric"
+2. Add **Mesh Filter** component
+3. Assign cone mesh (use VRSL spotlight cone or create custom)
+4. Add **Mesh Renderer** component
+5. Create material using VRSL volumetric shader:
+   - **DMX**: `VRSL-StaticLight-VolumetricMesh`
+   - **AudioLink**: `VRSL-AudioLink-StaticLight-VolumetricMesh`
+6. Set material Rendering Mode:
+   - Render Queue: 3002 (Transparent)
+   - Blend Mode: Transparent
+
+**Volumetric Setup:**
+```  
+MyCustomPAR-DMX
+├── Body
+└── Volumetric (MeshRenderer)
+    └── Material: Using VRSL-StaticLight-VolumetricMesh
+```
+
+### Add Projection Mesh (Optional)
+
+1. Create child GameObject: "Projection"
+2. Add **Mesh Filter** with flat cone/disc mesh
+3. Add **Mesh Renderer**
+4. Create material using projection shader:
+   - **DMX**: `VRSL-StaticLight-ProjectionMesh`  
+   - **AudioLink**: `VRSL-AudioLink-StaticLight-ProjectionMesh`
+5. Assign gobo texture atlas in material
+
+**Full Hierarchy:**
+```
+MyCustomPAR-DMX
+├── Body
+├── Volumetric  
+└── Projection
+```
+
+### Add VRSL Control Script
+
+1. Select root GameObject "MyCustomPAR-DMX"
+2. Add Component:
+   - **DMX**: `VRStageLighting_DMX_Static`
+   - **AudioLink**: `VRStageLighting_AudioLink_Static`
+3. Configure script:
+   - Drag meshes into **Obj Renderers** array:
+     - [0] Body
+     - [1] Volumetric
+     - [2] Projection (if using)
+4. Configure default values:
+   - Global Intensity: 1.0
+   - Light Color Tint: White
+   - Cone Width: 1.5
+   - Cone Length: 5.0
+
+### Configure Materials
+
+1. Select each material
+2. Set required properties:
+
+**Volumetric Material:**
+- Enable "Use Depth Light" (if using depth light)
+- Set "Potato Mode" based on 3D noise preference
+- Configure cone properties
+- Set render queue to 3002
+
+**Projection Material:**
+- Assign gobo texture atlas
+- Set projection selection
+- Configure intensity
+- Set render queue to 3001
+
+### Test Your Fixture
+
+1. Enter Play Mode
+2. Adjust properties in VRSL script inspector
+3. Verify all meshes respond to changes
+4. Test intensity, color, cone width/length
+5. For DMX: Assign DMX channel and test with grid
+
+</Steps>
+
+## Creating a Moving Head Fixture
+
+Moving heads require additional structure for pan/tilt:
+
+<Steps>
+
+### Create Fixture Hierarchy
+
+```
+MyCustomMover-DMX
+├── Base (Static)
+├── Yoke (Rotates on Y - Pan)
+│   └── Head (Rotates on X - Tilt)  
+│       ├── Body
+│       ├── Volumetric
+│       └── Projection
+└── Target (Empty Transform for constraints)
+```
+
+### Set Up Pan Rotation
+
+1. Select "Yoke" GameObject
+2. This object will rotate on Y axis for pan
+3. Reset rotation to (0, 0, 0)
+4. Rotation will be controlled by VRSL script or constraints
+
+### Set Up Tilt Rotation
+
+1. Select "Head" GameObject (child of Yoke)
+2. This object will rotate on X axis for tilt  
+3. Reset rotation to (0, 0, 0)
+4. Position pivot point at yoke connection
+
+### Add Constraint System
+
+1. Select "Head" GameObject
+2. Add **Aim Constraint** component
+3. This allows target following (optional)
+4. Configure in VRSL script for automated targeting
+
+### Configure DMX Movement
+
+1. Select root "MyCustomMover-DMX"
+2. In `VRStageLighting_DMX_Static` component:
+   - **Max/Min Pan**: Set rotation limits (e.g., -180 to 180)
+   - **Max/Min Tilt**: Set rotation limits (e.g., -90 to 90)
+   - **Invert Pan/Tilt**: Adjust if rotation direction is wrong
+   - **Is Upside Down**: Check if fixture is ceiling-mounted
+3. Assign DMX channels for pan/tilt (typically channels 2-5)
+
+<Warning>
+Ensure Head transform's forward axis (blue arrow) points in the direction the light should project. Adjust mesh rotation in modeling software if needed.
+</Warning>
+
+</Steps>
+
+## Custom Volumetric Meshes
+
+### Creating Volumetric Mesh
+
+Options for volumetric meshes:
+
+**1. Use Existing VRSL Meshes:**
+- Located in VRSL package
+- Pre-optimized for performance
+- Various cone shapes available
+
+**2. Create in Blender:**
+```
+1. Create cone mesh
+2. UV unwrap (cylindrical projection)
+3. Ensure origin is at cone tip
+4. Export as FBX
+5. Import to Unity
+```
+
+**3. Create in Unity:**
+- Use ProBuilder to create cone
+- Adjust vertices for desired shape
+- UV unwrap appropriately
+
+### Volumetric Mesh Requirements
+
+**Topology:**
+- Origin at emission point (tip of cone)
+- Forward direction matches light direction
+- Reasonable polygon count (50-200 tris)
+- Clean geometry (no overlapping faces)
+
+**UVs:**
+- Cylindrical unwrap from tip to base
+- U: Around circumference (0-1)
+- V: From tip to base (0-1)
+- Used by shader for gradient effects
+
+**LOD Versions:**
+- Create High (200 tris), Med (100 tris), Low (50 tris)
+- Swap via VRSL Control Panel
+- Significant performance improvement
+
+<Tip>
+Start with VRSL's existing volumetric meshes and modify their scale/proportions rather than creating from scratch.
+</Tip>
+
+## Custom Gobo Textures
+
+### Creating Gobo Atlas
+
+VRSL uses texture atlases for gobo patterns:
+
+**Atlas Layout:**
+```
+[1] [2] [3] [4]
+[5] [6] [7] [8]
+```
+
+**Specifications:**
+- Resolution: 2048x2048 (or 1024x1024 for optimization)
+- Format: PNG with alpha channel
+- Each gobo: 512x512 pixels
+- Layout: 4x2 grid (8 gobos)
+- Background: Transparent (alpha = 0)
+- Pattern: White (for tinting) or colored
+
+### Creating Individual Gobos
+
+**In Photoshop/GIMP:**
+1. Create 512x512 document
+2. Transparent background
+3. Draw/import your pattern in white
+4. Use alpha channel for shape:
+   - Black = Blocked (opaque)
+   - White = Light passes (transparent)
+   - Gray = Partial transparency
+5. Save as PNG
+
+**Tips:**
+- Keep designs high-contrast
+- Avoid very fine details (will blur at distance)
+- Test how it looks with different colors
+- Consider rotation when designing
+
+### Assembling the Atlas
+
+1. Create 2048x2048 document
+2. Arrange 8 gobos in 4x2 grid
+3. Ensure exact spacing (no gaps or overlaps)
+4. Each gobo occupies 512x512 square
+5. Export as PNG with alpha
+6. Import to Unity
+
+**Import Settings:**
+```
+Texture Type: Default
+Alpha Source: Input Texture Alpha
+Alpha Is Transparency: Yes  
+Wrap Mode: Clamp
+Filter Mode: Bilinear
+Max Size: 2048
+Compression: High Quality
+```
+
+### Assigning to Material
+
+1. Create/select projection material
+2. Find "Gobo Texture" property
+3. Assign your atlas texture
+4. Material will automatically index into correct gobo
+5. Use "Projection Selection" (1-8) to choose gobo
+
+## Fixture Definitions (VRSL 2.6.0+)
+
+Fixture Definition files describe your fixture's DMX profile:
+
+### Creating Fixture Definition
+
+1. Right-click in Project: **Create > VRSL > Fixture Definition**
+2. Name it "MyCustomFixture-Definition"
+3. Configure properties:
+
+**Basic Info:**
+- **Fixture Name**: Display name
+- **Manufacturer**: Your name or studio
+- **Channel Count**: Total DMX channels used
+
+**Channel Definitions:**
+For each channel, specify:
+- Channel number
+- Function (Intensity, Red, Green, Blue, Pan, Tilt, etc.)
+- Value range (0-255)
+- Description
+
+**Example 8-Channel PAR:**
+```
+ Channel 1: Intensity (0-255)
+ Channel 2: Red (0-255)
+ Channel 3: Green (0-255)
+ Channel 4: Blue (0-255)
+ Channel 5: White (0-255)
+ Channel 6: Strobe (0-255: 0=off, 1-255=speed)
+ Channel 7: Dimmer Curve (0-255: Linear/Square/Inverse)
+ Channel 8: Macro (Special effects)
+```
+
+### Applying Definition to Fixture
+
+1. Select your fixture GameObject
+2. In DMX Static component, find "Fixture Definition"
+3. Assign your Fixture Definition asset
+4. Used for patch export and documentation
+
+### Exporting Patch Data
+
+1. VRSL Control Panel > Utilities
+2. "Export DMX Patch Data"
+3. Choose format:
+   - **JSON**: Machine-readable
+   - **MVR**: My Virtual Rig (industry standard)  
+   - **PDF**: Human-readable patch list
+4. Includes all fixtures with definitions
+5. Import into lighting software
+
+<Note>
+Fixture Definitions are optional but highly recommended for documentation and collaboration.
+</Note>
+
+## Advanced Customization
+
+### Custom Shader Properties
+
+Add custom properties while maintaining VRSL compatibility:
+
+1. Duplicate VRSL shader
+2. Add your properties:
+```hlsl
+_MyCustomColor ("My Custom Color", Color) = (1,1,1,1)
+_MyCustomFloat ("My Custom Float", Range(0,1)) = 0.5
+```
+3. Integrate with VRSL's existing calculations
+4. Test thoroughly with DMX/AudioLink
+
+<Warning>
+Modifying VRSL shaders can break compatibility with updates. Document all changes and test extensively.
+</Warning>
+
+### Custom Scripts
+
+Extend VRSL scripts with custom behavior:
+
+**Option 1: Inherit from VRSL Script**
+```csharp
+public class MyCustomFixture : VRStageLighting_DMX_Static
+{
+    public float customProperty;
+    
+    void Start()
+    {
+        base.Start();
+        // Your custom initialization
+    }
+}
+```
+
+**Option 2: Separate Control Script**
+```csharp
+public class CustomFixtureController : MonoBehaviour  
+{
+    public VRStageLighting_DMX_Static vrslComponent;
+    
+    void Update()
+    {
+        // Control vrslComponent from your logic
+        vrslComponent.GlobalIntensity = yourCustomValue;
+    }
+}
+```
+
+### Multi-Instance Fixtures
+
+Create fixtures with multiple light sources:
+
+**Light Bar Example:**
+```
+MyLightBar-DMX
+├── Cell-1 (Complete fixture)
+│   ├── Body
+│   ├── Volumetric
+│   └── VRSL DMX Script (Channel 1)
+├── Cell-2
+│   ├── Body  
+│   ├── Volumetric
+│   └── VRSL DMX Script (Channel 5)
+├── Cell-3
+│   └── ... (Channel 9)
+└── Cell-4
+    └── ... (Channel 13)
+```
+
+Each cell is a complete fixture with its own DMX channel assignment.
+
+### Laser Fixtures
+
+Lasers use a different shader:
+
+1. Use `VRSL-BasicLaser-DMX` or `VRSL-AudioLink-BasicLaser` shader
+2. Apply to line mesh or textured quad
+3. Configure in VRStageLighting_AudioLink_Laser component:
+   - **Laser Count**: Number of beams
+   - **Cone Width/Length**: Beam properties
+   - **Laser Thickness**: Individual beam width
+   - **Cone X/Y/Z Rotation**: Beam pattern rotation
+   - **Laser Scroll**: Animated movement
+
+## Testing Custom Fixtures
+
+<Steps>
+
+### Editor Testing
+
+1. Enter Play Mode
+2. Select fixture
+3. Adjust inspector properties:
+   - Global Intensity
+   - Light Color Tint  
+   - Cone Width/Length
+   - Projection Selection (if applicable)
+4. Verify all meshes respond correctly
+5. Check materials are using correct shaders
+
+### DMX Testing
+
+1. Set up DMX grid node (or use test video)
+2. Assign DMX channel to fixture
+3. Send test DMX values from console
+4. Verify:
+   - Intensity responds (Channel 1)
+   - Color responds (Channels 2-4)
+   - Movement responds if moving head
+   - Strobe responds
+   - Gobo selection works
+
+### AudioLink Testing
+
+1. Set up AudioLink in scene
+2. Play test audio
+3. Adjust Band and Multiplier
+4. Verify fixture reacts to audio
+5. Test different frequency bands
+6. Test Color Chord if enabled
+
+### Performance Testing
+
+1. Duplicate fixture 10-50 times
+2. Check FPS in editor
+3. Verify GPU instancing is working:
+   - Check draw calls in Stats panel
+   - Should be 1 batch per unique material
+4. Test different quality settings
+5. Profile in Unity Profiler
+
+</Steps>
+
+## Creating Prefabs
+
+### Making Your Fixture Reusable
+
+<Steps>
+
+1. Set up fixture completely in scene
+2. Configure all default values
+3. Test thoroughly
+4. Drag from Hierarchy to Project folder
+5. Creates prefab asset
+6. Name following VRSL convention:
+   - "MyFixture-DMX-Horizontal"
+   - "MyFixture-AudioLink"
+
+### Prefab Variants
+
+Create variants for different modes:
+
+**Base Prefab:**
+- Complete fixture setup
+- Default materials
+
+**Horizontal DMX Variant:**  
+- Inherits from base
+- DMX script configured for horizontal mode
+- Appropriate materials
+
+**Vertical DMX Variant:**
+- Inherits from base
+- DMX script configured for vertical mode
+- Appropriate materials
+
+**AudioLink Variant:**
+- Inherits from base
+- AudioLink script instead of DMX
+- AudioLink-compatible materials
+
+</Steps>
+
+## Distribution
+
+### Packaging for Others
+
+If sharing custom fixtures:
+
+<Steps>
+
+1. **Organize Assets:**
+   - Create folder: "Assets/MyFixtures/"
+   - Include:
+     - Prefabs
+     - Models (FBX/mesh files)
+     - Materials
+     - Textures
+     - Fixture Definitions
+
+2. **Document:**
+   - Create README.txt
+   - Include:
+     - Installation instructions
+     - DMX channel layout
+     - Usage notes
+     - Version compatibility  
+
+3. **Export UnityPackage:**
+   - Right-click folder
+   - Export Package
+   - Include dependencies
+   - Test import in fresh project
+
+4. **Share:**
+   - Upload to Gumroad, GitHub, etc.
+   - Include preview images
+   - Specify VRSL version compatibility
+   - Provide support contact
+
+</Steps>
+
+### Licensing Considerations
+
+- VRSL shaders are MIT licensed (permissive)
+- Your models/textures can use any license
+- Credit VRSL if redistributing with shaders
+- Consider open-source for community benefit
+
+## Common Issues
+
+### Fixture Doesn't Respond
+
+**Check:**
+- VRSL script component is attached
+- Obj Renderers array includes all meshes
+- Materials use VRSL shaders
+- DMX channel is assigned (for DMX fixtures)
+- Control Panel is in scene
+
+### Materials Look Wrong
+
+**Verify:**
+- Using correct VRSL shader (DMX vs AudioLink)
+- Render queue is correct (3002 for volumetric)
+- Blend mode is set properly
+- Material properties match expectations
+- No conflicting materials or shaders
+
+### Movement Not Working
+
+**For Moving Heads:**
+- Check Yoke and Head hierarchy
+- Verify forward direction is correct
+- Check pan/tilt limits are set
+- Ensure DMX channels are assigned correctly
+- Test with known working DMX data
+
+### Performance Issues
+
+**Optimize:**
+- Use lower-poly volumetric mesh
+- Reduce projection texture resolution
+- Ensure GPU instancing is working
+- Check for duplicate materials
+- Use appropriate render queues
+
+## Best Practices
+
+<Tip>
+**Design Guidelines:**
+- Start with existing VRSL fixtures as templates
+- Keep volumetric meshes under 200 triangles
+- Use power-of-2 texture dimensions
+- Test with both DMX and AudioLink
+- Create multiple LOD versions
+- Document your DMX channel layout
+- Follow VRSL naming conventions
+</Tip>
+
+**Workflow:**
+- Model in your 3D software
+- Import to Unity early and test often
+- Use VRSL's existing shaders when possible
+- Create prefab variants for different modes
+- Test performance with many instances
+- Get feedback from community
+
+**Compatibility:**
+- Test with latest VRSL version
+- Document version requirements
+- Don't modify core VRSL shaders if possible
+- Use Material Property Blocks for per-instance properties
+- Maintain GPU instancing compatibility
+
+## Next Steps
+
+- Learn [DMX Setup](/guides/dmx-setup) to control your fixtures
+- Integrate [AudioLink](/guides/audiolink-setup) for audio reactivity
+- Optimize with [Performance Guide](/guides/performance-optimization)
+- Set up [Video Streaming](/guides/streaming-setup) for live control
+
+## Resources
+
+- [VRSL Discord](https://vrsl.dev) - Share and get feedback on custom fixtures
+- [VRSL GitHub](https://github.com/AcChosen/VR-Stage-Lighting) - Example fixtures
+- [Unity Shader Documentation](https://docs.unity3d.com/Manual/Shaders.html)
+- [Blender Documentation](https://docs.blender.org/) - For 3D modeling

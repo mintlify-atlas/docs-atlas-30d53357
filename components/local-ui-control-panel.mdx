@@ -1,0 +1,563 @@
+---
+title: Local UI Control Panel Component
+description: Central control system for VRSL quality settings, intensity, and rendering modes
+---
+
+The `VRSL_LocalUIControlPanel` component is the central management system for VR Stage Lighting. It provides user-accessible controls for quality modes, intensity levels, DMX/AudioLink configuration, and rendering settings for all fixtures in the scene.
+
+## Overview
+
+This component acts as the hub for VRSL configuration, managing:
+- Quality modes for volumetric, projection, disco ball, and lens flare effects
+- Intensity sliders for different fixture types
+- DMX grid mode selection (Horizontal/Vertical/Legacy)
+- AudioLink enable/disable
+- Global strobe control
+- Video sampling texture assignment
+- Material property synchronization
+
+## Inspector Properties
+
+### Quality Modes
+
+<ParamField path="volumetricQuality" type="VolumetricQualityModes" default="High">
+  Quality mode for volumetric cone effects:
+  - **High**: Transparent blending, highest quality
+  - **Medium**: Transparent with optimized sampling
+  - **Low**: Alpha cutout, best performance
+</ParamField>
+
+<ParamField path="lockVolumetricQualityMode" type="bool" default="false">
+  Prevents users from changing volumetric quality. Useful for world optimization.
+</ParamField>
+
+<ParamField path="blinderProjectionQuality" type="DefaultQualityModes" default="High">
+  Quality mode for blinder projection effects:
+  - **High**: Transparent blending
+  - **Low**: Alpha cutout
+</ParamField>
+
+<ParamField path="lockBlinderProjectionQualityMode" type="bool" default="false">
+  Prevents users from changing blinder projection quality.
+</ParamField>
+
+<ParamField path="parProjectionQuality" type="DefaultQualityModes" default="High">
+  Quality mode for PAR light projection effects:
+  - **High**: Transparent blending
+  - **Low**: Alpha cutout
+</ParamField>
+
+<ParamField path="lockParProjectionQualityMode" type="bool" default="false">
+  Prevents users from changing PAR projection quality.
+</ParamField>
+
+<ParamField path="otherProjectionQuality" type="DefaultQualityModes" default="High">
+  Quality mode for other projection effects (moving heads, spots):
+  - **High**: Transparent blending
+  - **Low**: Alpha cutout
+</ParamField>
+
+<ParamField path="lockOtherProjectionQualityMode" type="bool" default="false">
+  Prevents users from changing other projection quality.
+</ParamField>
+
+<ParamField path="discoballQuality" type="DefaultQualityModes" default="High">
+  Quality mode for disco ball reflection effects:
+  - **High**: Transparent blending
+  - **Low**: Alpha cutout
+</ParamField>
+
+<ParamField path="lockDiscoballQualityMode" type="bool" default="false">
+  Prevents users from changing disco ball quality.
+</ParamField>
+
+<ParamField path="lensFlareQuality" type="DefaultQualityModes" default="High">
+  Quality mode for lens flare effects:
+  - **High**: Transparent blending
+  - **Low**: Alpha cutout
+</ParamField>
+
+<ParamField path="lockLensFlareQualityMode" type="bool" default="false">
+  Prevents users from changing lens flare quality.
+</ParamField>
+
+### Video Sampling
+
+<ParamField path="videoSampleTargetTexture" type="Texture">
+  Optional texture for video sampling. When assigned, fixtures can sample colors from this texture for video-reactive effects.
+</ParamField>
+
+### Materials
+
+<ParamField path="fixtureMaterials" type="Material[]">
+  Array of all fixture materials in the scene. Used for intensity and property updates.
+</ParamField>
+
+<ParamField path="volumetricMaterials" type="Material[]">
+  Array of all volumetric cone materials. Used for quality mode and intensity updates.
+</ParamField>
+
+<ParamField path="projectionMaterials" type="Material[]">
+  Array of all projection materials. Used for quality mode and intensity updates.
+</ParamField>
+
+<ParamField path="discoBallMaterials" type="Material[]">
+  Array of all disco ball materials. Used for quality mode and intensity updates.
+</ParamField>
+
+<ParamField path="laserMaterials" type="Material[]">
+  Array of all laser materials. Used for intensity updates.
+</ParamField>
+
+### Post Processing
+
+<ParamField path="bloomAnimator" type="Animator">
+  Optional reference to bloom post-processing animator for bloom intensity control.
+</ParamField>
+
+### UI Sliders
+
+<ParamField path="masterSlider" type="UnityEngine.UI.Slider">
+  Master intensity slider. Controls maximum intensity for all fixture types.
+</ParamField>
+
+<ParamField path="fixtureSlider" type="UnityEngine.UI.Slider">
+  Fixture intensity slider. Controls brightness of fixture body meshes.
+</ParamField>
+
+<ParamField path="volumetricSlider" type="UnityEngine.UI.Slider">
+  Volumetric intensity slider. Controls brightness of volumetric cone effects.
+</ParamField>
+
+<ParamField path="projectionSlider" type="UnityEngine.UI.Slider">
+  Projection intensity slider. Controls brightness of light projections.
+</ParamField>
+
+<ParamField path="discoBallSlider" type="UnityEngine.UI.Slider">
+  Disco ball intensity slider. Controls brightness of disco ball reflections.
+</ParamField>
+
+<ParamField path="laserSlider" type="UnityEngine.UI.Slider">
+  Laser intensity slider. Controls brightness of laser effects.
+</ParamField>
+
+<ParamField path="bloomSlider" type="UnityEngine.UI.Slider">
+  Bloom intensity slider. Controls post-processing bloom effect strength.
+</ParamField>
+
+<ParamField path="[type]SliderText" type="UnityEngine.UI.Text">
+  Text components for displaying slider percentages. One for each slider type.
+</ParamField>
+
+<ParamField path="fixtureIntensityMax" type="float" default="1.0">
+  Maximum intensity value for fixture meshes. Set by master slider.
+</ParamField>
+
+<ParamField path="volumetricIntensityMax" type="float" default="1.0">
+  Maximum intensity value for volumetric effects. Set by master slider.
+</ParamField>
+
+<ParamField path="projectionIntensityMax" type="float" default="1.0">
+  Maximum intensity value for projections. Set by master slider.
+</ParamField>
+
+<ParamField path="discoballIntensityMax" type="float" default="1.0">
+  Maximum intensity value for disco balls. Set by master slider.
+</ParamField>
+
+<ParamField path="laserIntensityMax" type="float" default="1.0">
+  Maximum intensity value for lasers. Set by master slider.
+</ParamField>
+
+### UI Toggles and Buttons
+
+<ParamField path="volumetricNoiseToggle" type="UnityEngine.UI.Toggle">
+  Toggle for volumetric noise effect. Disable for better performance on low-end systems.
+</ParamField>
+
+<ParamField path="volumetricHighButton" type="UnityEngine.UI.Button">
+  Button to set volumetric quality to High mode.
+</ParamField>
+
+<ParamField path="volumetricMedButton" type="UnityEngine.UI.Button">
+  Button to set volumetric quality to Medium mode.
+</ParamField>
+
+<ParamField path="volumetricLowButton" type="UnityEngine.UI.Button">
+  Button to set volumetric quality to Low mode.
+</ParamField>
+
+<ParamField path="globalStrobeToggleButton" type="UnityEngine.UI.Button">
+  Button to globally enable/disable strobe effects. Useful for photosensitivity.
+</ParamField>
+
+### DMX Configuration
+
+<ParamField path="isUsingDMX" type="bool" default="true">
+  Enable DMX fixture control. Set to false if only using AudioLink.
+</ParamField>
+
+<ParamField path="isUsingAudioLink" type="bool" default="true">
+  Enable AudioLink fixture control. Set to false if only using DMX.
+</ParamField>
+
+<ParamField path="DMXMode" type="int" default="0" range="0-2">
+  DMX grid mode selection:
+  - **0**: Horizontal Mode (~1560 channels, 3 universes)
+  - **1**: Vertical Mode (~871 channels, 1.7 universes)  
+  - **2**: Legacy Mode (original sector-based)
+</ParamField>
+
+<ParamField path="useExtendedUniverses" type="bool" default="false">
+  Enable 9-universe RGB mode for expanded color control.
+</ParamField>
+
+<ParamField path="delayStrobeForGI" type="bool" default="true">
+  Delays strobe output for global illumination baking. Recommended to keep enabled.
+</ParamField>
+
+<ParamField path="DMX_CRTS_Horizontal" type="CustomRenderTexture[]">
+  Array of Custom Render Textures for horizontal DMX mode. Auto-populated by VRSL setup.
+</ParamField>
+
+<ParamField path="DMX_CRTS_Vertical" type="CustomRenderTexture[]">
+  Array of Custom Render Textures for vertical DMX mode. Auto-populated by VRSL setup.
+</ParamField>
+
+<ParamField path="DMX_CRTS_Legacy" type="CustomRenderTexture[]">
+  Array of Custom Render Textures for legacy DMX mode. Auto-populated by VRSL setup.
+</ParamField>
+
+<ParamField path="AudioLink_CRTs" type="CustomRenderTexture[]">
+  Array of Custom Render Textures for AudioLink mode. Auto-populated by VRSL setup.
+</ParamField>
+
+### Advanced Settings
+
+<ParamField path="sperateInGameInterpolationSpeed" type="bool" default="true">
+  Reduces interpolation speed in-game for more responsive DMX control.
+</ParamField>
+
+<ParamField path="inGameInterpolationModifier" type="float" default="1.55">
+  Multiplier for in-game interpolation reduction when `sperateInGameInterpolationSpeed` is enabled.
+</ParamField>
+
+<ParamField path="outputDebugLogs" type="bool" default="false">
+  Enables debug logging to console. Useful for troubleshooting.
+</ParamField>
+
+<ParamField path="VolumetricNoise" type="bool" default="true">
+  Property for controlling volumetric noise effect. Automatically disabled on mobile platforms.
+</ParamField>
+
+<ParamField path="RequireDepthLight" type="bool" default="true">
+  Requires depth-based lighting for volumetric effects. Automatically disabled on mobile platforms.
+</ParamField>
+
+<ParamField path="GlobalDisableStrobe" type="bool" default="false">
+  Property for globally disabling strobe effects. Useful for photosensitive users.
+</ParamField>
+
+## Configuration Steps
+
+### Initial Setup
+
+1. Add `VRSL_LocalUIControlPanel` component to a persistent GameObject
+2. Populate material arrays:
+   - Drag all fixture materials to `fixtureMaterials`
+   - Drag all volumetric materials to `volumetricMaterials`
+   - Drag all projection materials to `projectionMaterials`
+   - Drag all disco ball materials to `discoBallMaterials`
+   - Drag all laser materials to `laserMaterials`
+3. Assign DMX Custom Render Texture arrays (auto-populated by VRSL prefab)
+4. Assign AudioLink Custom Render Texture array (auto-populated by VRSL prefab)
+
+### UI Connection
+
+1. Create Canvas with UI sliders and buttons
+2. Assign slider components to corresponding fields
+3. Assign text components for percentage display
+4. Configure slider OnValueChanged events:
+   - Master Slider → `_SetFinalIntensity()`
+   - Fixture Slider → `_SetFixtureIntensity()`
+   - Volumetric Slider → `_SetVolumetricIntensity()`
+   - Projection Slider → `_SetProjectionIntensity()`
+   - Disco Ball Slider → `_SetDiscoBallIntensity()`
+   - Laser Slider → `_SetLaserIntensity()`
+   - Bloom Slider → `_SetBloomIntensity()`
+5. Configure button OnClick events:
+   - Volumetric High → `_SetVolumetricHigh()`
+   - Volumetric Med → `_SetVolumetricMed()`
+   - Volumetric Low → `_SetVolumetricLow()`
+   - Global Strobe Toggle → `_ToggleGlobalStrobe()`
+
+### Quality Mode Lock Setup
+
+To prevent users from changing quality settings:
+
+1. Set desired quality modes
+2. Enable corresponding lock booleans:
+   - `lockVolumetricQualityMode`
+   - `lockBlinderProjectionQualityMode`
+   - `lockParProjectionQualityMode`
+   - `lockOtherProjectionQualityMode`
+   - `lockDiscoballQualityMode`
+   - `lockLensFlareQualityMode`
+3. Buttons will be visually disabled and non-interactive
+
+## Public Methods
+
+### Quality Mode Methods
+
+<ParamField path="_SetVolumetricHigh()" type="void">
+  Sets volumetric quality to High mode (if not locked).
+</ParamField>
+
+<ParamField path="_SetVolumetricMed()" type="void">
+  Sets volumetric quality to Medium mode (if not locked).
+</ParamField>
+
+<ParamField path="_SetVolumetricLow()" type="void">
+  Sets volumetric quality to Low mode (if not locked).
+</ParamField>
+
+<ParamField path="_SetProjectionBlindersHigh()" type="void">
+  Sets blinder projection quality to High.
+</ParamField>
+
+<ParamField path="_SetProjectionBlindersLow()" type="void">
+  Sets blinder projection quality to Low.
+</ParamField>
+
+<ParamField path="_SetProjectionParsHigh()" type="void">
+  Sets PAR projection quality to High.
+</ParamField>
+
+<ParamField path="_SetProjectionParsLow()" type="void">
+  Sets PAR projection quality to Low.
+</ParamField>
+
+<ParamField path="_SetProjectionOtherHigh()" type="void">
+  Sets other projection quality to High.
+</ParamField>
+
+<ParamField path="_SetProjectionOtherLow()" type="void">
+  Sets other projection quality to Low.
+</ParamField>
+
+<ParamField path="_SetDiscoballHigh()" type="void">
+  Sets disco ball quality to High.
+</ParamField>
+
+<ParamField path="_SetDiscoballLow()" type="void">
+  Sets disco ball quality to Low.
+</ParamField>
+
+<ParamField path="_SetLensFlareHigh()" type="void">
+  Sets lens flare quality to High.
+</ParamField>
+
+<ParamField path="_SetLensFlareLow()" type="void">
+  Sets lens flare quality to Low.
+</ParamField>
+
+<ParamField path="_UpdateAllQualityModes()" type="void">
+  Forces update of all quality modes. Useful after loading settings.
+</ParamField>
+
+### Intensity Methods
+
+<ParamField path="_SetFinalIntensity()" type="void">
+  Sets master intensity for all fixture types. Called by master slider.
+</ParamField>
+
+<ParamField path="_SetFixtureIntensity()" type="void">
+  Sets intensity for fixture body meshes. Updates `_UniversalIntensity` shader property.
+</ParamField>
+
+<ParamField path="_SetVolumetricIntensity()" type="void">
+  Sets intensity for volumetric cone effects.
+</ParamField>
+
+<ParamField path="_SetProjectionIntensity()" type="void">
+  Sets intensity for light projections.
+</ParamField>
+
+<ParamField path="_SetDiscoBallIntensity()" type="void">
+  Sets intensity for disco ball reflections.
+</ParamField>
+
+<ParamField path="_SetLaserIntensity()" type="void">
+  Sets intensity for laser effects.
+</ParamField>
+
+<ParamField path="_SetBloomIntensity()" type="void">
+  Sets bloom post-processing intensity via animator (if assigned).
+</ParamField>
+
+### DMX Control Methods
+
+<ParamField path="_CheckDMX()" type="void">
+  Updates DMX Custom Render Texture state based on current mode. Enables active mode CRTs and disables others.
+</ParamField>
+
+<ParamField path="_SetDMXHorizontal()" type="void">
+  Switches to Horizontal DMX mode (if DMX is enabled).
+</ParamField>
+
+<ParamField path="_SetDMXVertical()" type="void">
+  Switches to Vertical DMX mode (if DMX is enabled).
+</ParamField>
+
+<ParamField path="_SetDMXLegacy()" type="void">
+  Switches to Legacy DMX mode (if DMX is enabled).
+</ParamField>
+
+<ParamField path="_CheckAudioLink()" type="void">
+  Enables or disables AudioLink Custom Render Textures based on `isUsingAudioLink`.
+</ParamField>
+
+<ParamField path="_CheckkExtendedUniverses()" type="void">
+  Updates 9-universe mode setting on all DMX CRT materials.
+</ParamField>
+
+### Other Methods
+
+<ParamField path="_ToggleGlobalStrobe()" type="void">
+  Toggles global strobe disable on/off. Updates all DMX strobe textures.
+</ParamField>
+
+<ParamField path="_ForceUpdateVideoSampleTexture()" type="void">
+  Updates `_SamplingTexture` property on all materials with `videoSampleTargetTexture`.
+</ParamField>
+
+<ParamField path="_CheckDepthLightStatus()" type="void">
+  Updates depth light and volumetric noise settings on all materials.
+</ParamField>
+
+## Example Setup
+
+### Basic Control Panel
+
+```
+Quality Modes:
+  volumetricQuality: High
+  blinderProjectionQuality: High
+  parProjectionQuality: Medium
+  otherProjectionQuality: High
+  discoballQuality: Medium
+  
+DMX Configuration:
+  isUsingDMX: true
+  isUsingAudioLink: true
+  DMXMode: 1 (Vertical)
+  useExtendedUniverses: false
+```
+
+### Performance-Optimized Setup
+
+```
+Quality Modes:
+  volumetricQuality: Low
+  lockVolumetricQualityMode: true
+  blinderProjectionQuality: Low
+  lockBlinderProjectionQualityMode: true
+  parProjectionQuality: Low  
+  lockParProjectionQualityMode: true
+  otherProjectionQuality: Low
+  lockOtherProjectionQualityMode: true
+  discoballQuality: Low
+  lockDiscoballQualityMode: true
+  
+Advanced:
+  VolumetricNoise: false
+  RequireDepthLight: false
+```
+
+### Quest-Optimized Setup
+
+```
+Quality Modes:
+  All quality modes: Low
+  All lock modes: true
+  
+Advanced:
+  VolumetricNoise: false (auto-disabled on Quest)
+  RequireDepthLight: false (auto-disabled on Quest)
+  
+DMX:
+  useExtendedUniverses: false
+  DMXMode: 1 (Vertical, fewer channels)
+```
+
+## Integration with Other Components
+
+### DMX Fixtures
+
+The Control Panel manages DMX rendering for all `VRStageLighting_DMX_Static` components:
+- Enables/disables DMX Custom Render Textures
+- Switches between Horizontal/Vertical/Legacy grid modes
+- Controls global strobe disable
+- Sets material intensity properties
+
+### AudioLink Fixtures
+
+Manages AudioLink for all `VRStageLighting_AudioLink_Static` components:
+- Enables/disables AudioLink Custom Render Textures
+- Sets material intensity properties
+- Manages quality modes for AudioLink effects
+
+### Grid Reader
+
+The active DMX mode determines which grid textures are used:
+- `DMXMode = 0`: Uses `DMX_CRTS_Horizontal` textures
+- `DMXMode = 1`: Uses `DMX_CRTS_Vertical` textures
+- `DMXMode = 2`: Uses `DMX_CRTS_Legacy` textures
+
+Grid Reader populates these textures with OSC data.
+
+## Performance Optimization
+
+### Quality Mode Impact
+
+**High Quality** (Transparent):
+- Best visual quality
+- Requires alpha blending
+- Higher fill rate cost
+- Recommended for PC
+
+**Low Quality** (Alpha Cutout):
+- Good visual quality
+- Uses alpha testing
+- Better performance
+- Recommended for Quest
+
+### Material Arrays
+
+The component updates materials in batches:
+- Iterates through material arrays
+- Sets shader properties via `Material.SetFloat/SetInt/SetTexture`
+- Occurs only when settings change
+- No per-frame overhead
+
+### Custom Render Textures
+
+Disabled CRTs stop updating:
+- Inactive DMX modes: UpdateMode = OnDemand
+- Active DMX mode: UpdateMode = Realtime
+- Saves significant GPU time
+- Only one grid mode active at once
+
+## Mobile Platform Handling
+
+On Android and iOS (Quest):
+- `VolumetricNoise` automatically disabled
+- `RequireDepthLight` automatically disabled
+- Quality modes should be set to Low
+- Use lock booleans to prevent user changes
+
+## See Also
+
+- [DMX Static Component](/components/dmx-static) - DMX fixture control
+- [AudioLink Static Component](/components/audiolink-static) - AudioLink fixture control
+- [Grid Reader](/components/grid-reader) - OSC data reception

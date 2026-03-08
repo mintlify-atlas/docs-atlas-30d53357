@@ -1,0 +1,102 @@
+---
+title: 'Fixtures Overview'
+description: 'Overview of available VRSL fixture types and their capabilities'
+---
+
+VRSL provides a comprehensive suite of lighting fixtures designed to emulate professional stage lighting in VRChat. Each fixture type is optimized for performance using GPU instancing and custom shaders.
+
+## Fixture Categories
+
+VRSL fixtures are organized into the following categories:
+
+### Moving Lights
+Dynamic fixtures with pan and tilt capabilities:
+- **Spotlight** - Focused beam with gobo projection support
+- **Washlight** - Wide beam for area coverage
+
+### Static Lights
+Fixed-position fixtures for basic lighting:
+- **PAR Light** - Classic PAR can with RGB color mixing
+- **Blinder** - High-intensity strobe/blinder effects
+- **Flasher** - Single-channel strobe fixture
+- **Lightbar** - Multi-segment RGB lightbar
+
+### Special Effects
+- **Laser** - Laser beam effects with pan/tilt
+- **Disco Ball** - Rotating mirror ball projection
+
+## Control Modes
+
+All VRSL fixtures support multiple control modes:
+
+### DMX Mode
+Industry-standard DMX512 control via the VRSL Grid Node:
+- Channel-based control (1-13 channels depending on fixture)
+- Universe support (up to 9 universes in extended mode)
+- Horizontal and Vertical grid modes
+- Legacy sector-based addressing
+
+### AudioLink Mode
+Audio-reactive control via AudioLink integration:
+- Frequency band selection
+- Amplitude-based intensity
+- Color chord sampling
+- Theme color support
+
+### Udon Mode
+Direct Udon script control:
+- Runtime property modification
+- Target following for movers
+- Animation integration
+
+## Common Features
+
+All VRSL fixtures share these common features:
+
+- **GPU Instancing** - Efficient rendering for multiple fixtures
+- **Global Intensity** - Master brightness control
+- **Final Intensity** - Per-component brightness limits
+- **Color Tinting** - HDR color adjustment
+- **Strobe Effects** - DMX-controlled strobing
+- **Component Mode** - Separate control for volumetric, projection, and fixture meshes
+
+## DMX Channel Ranges
+
+| Fixture Type | DMX Channels | Notes |
+|-------------|--------------|-------|
+| Spotlight | 13 | Standard mover |
+| Washlight | 13 | Standard mover |
+| PAR Light | 5 or 13 | Simple or full mode |
+| Blinder | 5 or 13 | Simple or full mode |
+| Lightbar | 13 or 15 | Standard or multi-segment |
+| Laser | 13 | Full control |
+| Flasher | 1 | Single channel |
+| Disco Ball | 1 | Intensity only |
+
+## Prefab Locations
+
+All fixture prefabs are located in:
+```
+Packages/com.acchosen.vr-stage-lighting/Runtime/Prefabs/
+```
+
+Organized by control mode:
+- `DMX/Horizontal Mode/` - Standard DMX fixtures
+- `DMX/Vertical Mode/` - Vertical grid variants
+- `DMX/Legacy Mode/` - Legacy sector-based fixtures
+- `AudioLink/` - AudioLink-enabled variants
+
+## Performance Considerations
+
+- Use 5-channel variants for simple static lights when full DMX features aren't needed
+- Enable Final Intensity Component Mode to separately control volumetric brightness
+- Disable strobe effects if not needed to save processing
+- Use the legacy gobo range option for compatibility with older setups
+
+## Next Steps
+
+Explore detailed documentation for each fixture type:
+- [Moving Lights](/fixtures/moving-lights) - Spotlights and washlights
+- [Static Lights](/fixtures/static-lights) - PAR, blinder, flasher, lightbar
+- [Lasers](/fixtures/lasers) - Laser fixtures
+- [Disco Ball](/fixtures/disco-ball) - Disco ball effects

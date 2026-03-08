@@ -1,0 +1,361 @@
+---
+title: 'Laser Fixtures'
+description: 'Laser beam effects with pan and tilt control'
+---
+
+Laser fixtures provide focused beam effects that simulate stage laser systems. VRSL lasers feature pan and tilt control with RGB color mixing and various beam effects.
+
+## Overview
+
+VRSL laser fixtures use a simplified rendering system optimized for laser-style effects:
+- Thin, focused beam output
+- RGB color mixing
+- Pan and tilt control
+- Variable intensity
+- Strobe effects
+
+**Prefabs:**
+- DMX Horizontal: `VRSL-DMX-Static-Laser-H-13CH.prefab`
+- DMX Vertical: `VRSL-DMX-Static-Laser-V-13CH.prefab`
+- DMX Legacy: `VRSL-DMX-Static-Laser-L-13CH.prefab`
+- AudioLink: `VRSL-AudioLink-BasicLaser.prefab`
+
+<Warning>
+These are simulated laser effects for VR environments. They do not replicate the physical properties or safety concerns of real laser systems.
+</Warning>
+
+## DMX Channel Layout (13 Channels)
+
+Laser fixtures use the standard 13-channel DMX layout:
+
+| Channel | Function | Range | Description |
+|---------|----------|-------|-------------|
+| 1 | Pan (Coarse) | 0-255 | Horizontal rotation (0-360°) |
+| 2 | Pan (Fine) | 0-255 | Fine pan adjustment |
+| 3 | Tilt (Coarse) | 0-255 | Vertical rotation (0-360°) |
+| 4 | Tilt (Fine) | 0-255 | Fine tilt adjustment |
+| 5 | Red | 0-255 | Red beam intensity |
+| 6 | Green | 0-255 | Green beam intensity |
+| 7 | Blue | 0-255 | Blue beam intensity |
+| 8 | Intensity | 0-255 | Master dimmer |
+| 9 | Strobe | 0-255 | Strobe rate (0=off, 1-255=speed) |
+| 10 | Reserved | 0-255 | Future use |
+| 11 | Reserved | 0-255 | Future use |
+| 12 | Reserved | 0-255 | Future use |
+| 13 | Reserved | 0-255 | Future use |
+
+## Features
+
+### Pan and Tilt Control
+
+Lasers support full pan and tilt movement:
+- **Pan Range:** Configurable via `maxMinPan` (default ±180°)
+- **Tilt Range:** Configurable via `maxMinTilt` (default ±180°)
+- **16-bit Resolution:** Coarse and fine channels for smooth movement
+- **Inversion:** Pan and tilt can be inverted independently
+
+### Color System
+
+RGB additive color mixing:
+- Full 8-bit resolution per channel
+- HDR color support via `lightColorTint`
+- Pure colors or mixed hues
+- Hardware-accelerated blending
+
+**Common Laser Colors:**
+- Red: (255, 0, 0)
+- Green: (0, 255, 0)
+- Blue: (0, 0, 255)
+- Yellow: (255, 255, 0)
+- Cyan: (0, 255, 255)
+- Magenta: (255, 0, 255)
+- White: (255, 255, 255)
+
+### Beam Properties
+
+Unlike volumetric lights, lasers render as thin, focused beams:
+- Minimal spread
+- Sharp edges
+- High intensity core
+- Optimized for long distances
+
+## Inspector Properties
+
+### DMX Settings
+
+```csharp
+enableDMXChannels     // Enable/disable DMX control
+dmxChannel            // Starting DMX channel (1-512)
+dmxUniverse           // DMX universe (1-9)
+nineUniverseMode      // Extended universe mode
+useLegacySectorMode   // Legacy sector addressing
+```
+
+### Movement Settings
+
+```csharp
+invertPan             // Invert pan direction
+invertTilt            // Invert tilt direction
+panOffsetBlueGreen    // Pan offset in degrees (0-360)
+tiltOffsetBlue        // Tilt offset in degrees (0-360)
+maxMinPan             // Maximum pan range (+/- degrees)
+maxMinTilt            // Maximum tilt range (+/- degrees)
+```
+
+### Fixture Settings
+
+```csharp
+enableStrobe          // Enable strobe effects
+coneWidth             // Beam width (keep low for laser effect)
+coneLength            // Beam length (0.5-10)
+maxConeLength         // Beam mesh length (0.275-10)
+```
+
+### Intensity Settings
+
+```csharp
+globalIntensity       // Master brightness (0-1)
+finalIntensity        // Maximum brightness limit (0-1)
+lightColorTint        // HDR color tint/boost
+```
+
+## Configuration Examples
+
+### Basic Laser Setup
+
+1. Place laser prefab in scene
+2. Configure DMX:
+   - DMX Channel: 1
+   - DMX Universe: 1
+   - Enable DMX Channels: ✓
+3. Adjust beam:
+   - Cone Width: 0.5 (thin beam)
+   - Cone Length: 10.0 (maximum reach)
+   - Max Cone Length: 10.0
+4. Set intensity:
+   - Global Intensity: 1.0
+   - Final Intensity: 1.0
+   - Light Color Tint: White × 2.0 (HDR boost)
+
+### Scanning Laser Effect
+
+For sweeping laser movements:
+```csharp
+maxMinPan = 180       // Full 360° pan range
+maxMinTilt = 90       // 180° tilt range
+invertPan = false
+invertTilt = false
+```
+
+Use DMX to create scan patterns:
+- Slow pan sweep with fixed tilt
+- Circular patterns (combined pan/tilt)
+- Figure-8 patterns
+- Random movement
+
+### Static Laser Beam
+
+For fixed beam effects:
+```csharp
+enableDMXChannels = false  // Manual control
+panOffsetBlueGreen = 45    // Aim right 45°
+tiltOffsetBlue = 60        // Aim up 60°
+```
+
+### Laser Show Array
+
+Multiple lasers for complex effects:
+```csharp
+// Laser 1
+dmxChannel = 1
+panOffsetBlueGreen = 0
+
+// Laser 2  
+dmxChannel = 14
+panOffsetBlueGreen = 120
+
+// Laser 3
+dmxChannel = 27
+panOffsetBlueGreen = 240
+```
+
+Arrange in circular pattern, control via DMX for synchronized or independent movement.
+
+## Shader
+
+Laser fixtures use a specialized shader:
+- `VRSL-BasicLaser-DMX.shader`
+
+**Location:** `Runtime/Shaders/MovingLights/`
+
+The laser shader is optimized for:
+- Thin beam rendering
+- High contrast
+- Minimal bloom
+- Long-distance visibility
+
+## Use Cases
+
+### Laser Show Effects
+- **Beam Shows** - Sweeping laser beams
+- **Geometric Patterns** - Synchronized multi-laser patterns
+- **Audience Scanning** - Safe crowd scanning effects
+- **Aerial Effects** - Mid-air beam effects
+
+### Accent Lighting
+- **Spot Highlighting** - Pinpoint focused attention
+- **Path Indicators** - Directional guidance
+- **Stage Effects** - Sharp beam cuts through fog
+- **Architectural** - Building feature highlighting
+
+### DJ/Club Environments
+- **Beat Synchronized** - Pulsing to music (via AudioLink)
+- **Strobe Effects** - Rapid on/off
+- **Color Cycling** - RGB color changes
+- **Crowd Interaction** - Moving beams over audience
+
+## Performance Considerations
+
+### Optimize Beam Length
+
+Longer beams use more rendering resources:
+```csharp
+coneLength = 5.0      // Shorter for better performance
+maxConeLength = 5.0   // Match cone length
+```
+
+Only extend to visible range needed.
+
+### Minimize Width
+
+Thinner beams are more performant:
+```csharp
+coneWidth = 0.3       // Minimal width for laser effect
+```
+
+### Disable Unnecessary Features
+
+```csharp
+enableStrobe = false  // If not needed
+```
+
+## Realistic Laser Effects
+
+### With Fog/Atmosphere
+
+Lasers look best with atmospheric effects:
+1. Add post-processing volume
+2. Enable bloom with:
+   - Intensity: 0.3-0.5
+   - Threshold: 0.8
+   - Scatter: 0.7
+3. Consider particle fog effects
+
+### Color Intensity Balance
+
+Real laser systems have varying intensities per color:
+```csharp
+// Simulate typical laser output
+Red:   (255, 0, 0)   // Full power
+Green: (0, 128, 0)   // Lower (green appears brighter)
+Blue:  (0, 0, 255)   // Full power
+```
+
+Adjust via DMX or color tint for realism.
+
+## Safety Considerations
+
+<Warning>
+While these are virtual lasers with no physical danger, be mindful of:
+- Photosensitive users - avoid excessive strobing
+- Motion sickness - rapid movements may affect some users
+- Brightness - excessive intensity can be uncomfortable in VR
+</Warning>
+
+Recommended practices:
+- Include brightness adjustment UI
+- Provide strobe effect warnings
+- Test movement speeds for comfort
+- Offer "reduce effects" options
+
+## Troubleshooting
+
+### Laser Not Visible
+- Check intensity channel (8) is above 0
+- Verify at least one RGB channel has value
+- Ensure `globalIntensity` and `finalIntensity` > 0
+- Check beam isn't aimed away from view
+- Verify beam length is sufficient to reach visible area
+
+### Beam Too Thick/Looks Wrong
+- Reduce `coneWidth` (try 0.3-0.5)
+- Ensure using laser-specific shader
+- Check light color tint isn't over-boosting
+- Verify post-processing bloom settings
+
+### Jerky Movement
+- Increase DMX smoothing in Grid Reader
+- Use fine channels (2, 4) for precision
+- Reduce movement speed in DMX software
+- Check for stream compression artifacts
+
+### Colors Look Wrong
+- Verify RGB channel values in DMX
+- Check channel offset is correct (start at channel 5)
+- Test with manual color tint to verify fixture
+- Ensure universe assignment is correct
+
+### Strobe Not Working
+- Enable `enableStrobe` in inspector
+- Check channel 9 value is above ~20
+- Verify VRSL Grid Reader strobe processing
+- Test with manual strobe toggle
+
+## AudioLink Integration
+
+AudioLink laser variants support:
+- **Band Modulation** - Intensity reacts to frequency bands
+- **Color Chord** - Auto-color from audio analysis
+- **Theme Colors** - Match AudioLink theme
+- **Delay Offset** - Timing adjustment per laser
+
+### AudioLink Setup Example
+
+```csharp
+EnableAudioLink = true
+Band = 2               // Mids
+BandMultiplier = 2.0   // Sensitivity
+EnableColorChord = true
+Delay = 0.1            // Slight delay
+```
+
+See [AudioLink Setup](/guides/audiolink-setup) for detailed configuration.
+
+## Advanced Techniques
+
+### DMX Chase Patterns
+
+Create programmed sequences in DMX software:
+1. Record pan/tilt positions
+2. Set timing and transitions
+3. Sync to audio beats
+4. Layer multiple lasers with offsets
+
+### Geometric Projections
+
+Multiple lasers can create shapes:
+- **Triangle:** 3 lasers aimed to meet points
+- **Square:** 4 lasers for corners
+- **Star:** 5+ lasers radiating from center
+
+Use pan/tilt offsets to position, DMX to animate.
+
+### Color Cycling
+
+Program RGB transitions:
+- Smooth fades between colors
+- Quick snaps for impact
+- Rainbow cycles
+- Color-to-beat synchronization
+
+Implement via DMX scenes or AudioLink color chord.

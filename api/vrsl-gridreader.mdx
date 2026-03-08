@@ -1,0 +1,250 @@
+---
+title: GridReader
+description: OSC reader component for VRSL grid node communication
+---
+
+## Overview
+
+The `GridReader` class is an OSC (Open Sound Control) receiver that communicates with the VRSL grid node to receive DMX data in real-time. It listens for OSC messages containing DMX channel values and writes them to a texture buffer that VRSL fixtures can read from.
+
+This component is essential for real-time DMX control in the Unity Editor, allowing you to preview DMX-controlled lighting without being in VRChat.
+
+**Namespace:** `VRSL`  
+**Platform:** Unity Editor only (`#if UNITY_EDITOR`)  
+**Inherits from:** `MonoBehaviour`
+
+<Note>
+  This script only functions in the Unity Editor. It is automatically excluded from builds and is used solely for testing and previewing DMX lighting in the editor.
+</Note>
+
+## Configuration
+
+<ParamField path="_IsVertical" type="bool" default="true">
+  Enable if using the grid node in vertical mode. This affects how DMX data is mapped to the texture buffer.
+  - `true` = Vertical mode (~67 universes)
+  - `false` = Horizontal mode (~3 universes)
+</ParamField>
+
+<ParamField path="_ExpandedUniverseSupport" type="bool" default="false">
+  Enable if you are using RGB mode to use additional universes (9-universe mode). When enabled, RGB channels are parsed separately; when disabled, all RGB channels receive the same value.
+</ParamField>
+
+<ParamField path="_OSCPort" type="int" default="12000">
+  The port to listen for OSC messages on. Must match the port set in the VRSL grid node. The listener actually uses `_OSCPort + 1` for receiving data.
+</ParamField>
+
+<ParamField path="_OSCPrefix" type="string" default="/VRSL">
+  OSC address prefix assigned in the VRSL grid node. All incoming messages must match this prefix.
+</ParamField>
+
+## Internal Settings
+
+<ParamField path="_DataBuffer" type="Texture2D" required>
+  The texture that stores DMX channel values. This texture is read by VRSL fixtures to determine their state.
+  
+  <Warning>
+    Do not manually edit this field. It is automatically managed by the GridReader.
+  </Warning>
+</ParamField>
+
+## How It Works
+
+### Initialization
+
+1. On `Start()`, GridReader initializes buffer arrays based on the selected mode:
+   - **Vertical mode**: 13 x 67 pixels (871 DMX channels)
+   - **Horizontal mode**: 120 x 13 pixels (1560 DMX channels)
+
+2. Sets up an OSC UDP listener on the configured port
+
+3. Sends a refresh command to the grid node to request current DMX state:
+   ```
+   /VRSL/Command/RefreshDMX
+   ```
+
+### Data Reception
+
+When OSC messages arrive:
+
+1. Messages are parsed by `TekView.TekParse` (standard or expanded mode)
+2. Channel data is extracted: `[channel, red, green, blue]`
+3. Data is written to the buffer array
+4. The corresponding pixel is flagged for update
+
+### Texture Update
+
+On every `Update()`:
+
+1. Checks which pixels need updating (flagged channels)
+2. Writes color data to the `_DataBuffer` texture in 16x16 pixel blocks
+3. Applies texture changes
+4. VRSL fixtures read from this texture to get their DMX values
+
+## Grid Modes
+
+### Vertical Mode (`_IsVertical = true`)
+
+- **Dimensions**: 13 columns x 67 rows
+- **Total channels**: 871 DMX channels
+- **Best for**: Most standard lighting setups
+- **Mapping**: Channels are arranged vertically, then horizontally
+
+### Horizontal Mode (`_IsVertical = false`)
+
+- **Dimensions**: 120 columns x 13 rows
+- **Total channels**: 1560 DMX channels
+- **Best for**: Wide setups with many fixtures
+- **Mapping**: Channels are arranged horizontally, then vertically
+
+## Expanded Universe Support
+
+### Standard Mode (`_ExpandedUniverseSupport = false`)
+
+- Single value controls all RGB channels
+- Color data: `R = value, G = value, B = value`
+- Simpler, uses less bandwidth
+
+### Expanded Mode (`_ExpandedUniverseSupport = true`)
+
+- Separate RGB values per channel
+- Color data: `R = red, G = green, B = blue`
+- Enables 9-universe RGB mode
+- More data, more flexibility
+
+## Setup Example
+
+### In Unity Editor
+
+1. Add GridReader component to a GameObject in your scene:
+   ```csharp
+   GameObject gridObj = new GameObject("GridReader");
+   GridReader reader = gridObj.AddComponent<GridReader>();
+   ```
+
+2. Configure the settings:
+   ```csharp
+   // For vertical grid mode
+   reader._IsVertical = true;
+   reader._OSCPort = 12000;
+   reader._OSCPrefix = "/VRSL";
+   
+   // Enable if using 9-universe RGB mode
+   reader._ExpandedUniverseSupport = false;
+   ```
+
+3. Create and assign a data buffer texture:
+   - The texture should match your grid mode dimensions
+   - For vertical: 208x1072 pixels (13x16, 67x16)
+   - For horizontal: 1920x208 pixels (120x16, 13x16)
+
+### With VRSL Grid Node
+
+1. Ensure your VRSL grid node is configured with matching settings:
+   - OSC Port: 12000
+   - OSC Prefix: /VRSL
+   - Grid mode: Vertical or Horizontal
+
+2. Start your DMX software and grid node
+
+3. Enter Play mode in Unity - GridReader will automatically connect
+
+## Troubleshooting
+
+### No Data Received
+
+```csharp
+// Enable debug logging in GridReader.cs to see connection status
+Debug.Log("GridReader Init");
+```
+
+**Common causes:**
+- Port mismatch between GridReader and grid node
+- Firewall blocking UDP traffic on the specified port
+- Grid node not running
+- OSC prefix mismatch
+
+### Texture Not Updating
+
+**Check:**
+1. `_DataBuffer` is assigned in the inspector
+2. Texture format supports `SetPixels()` (should be readable)
+3. Console for error messages
+
+### Performance Issues
+
+**Optimization tips:**
+- GridReader only updates changed pixels, not the entire texture
+- Higher channel counts (horizontal mode) require more processing
+- Consider using standard mode instead of expanded if RGB separation isn't needed
+
+## Code Example: Custom Integration
+
+```csharp
+#if UNITY_EDITOR
+using VRSL;
+
+public class CustomDMXMonitor : MonoBehaviour
+{
+    public GridReader gridReader;
+    public Texture2D dmxTexture;
+    
+    void Start()
+    {
+        // Get reference to GridReader's data buffer
+        dmxTexture = gridReader._DataBuffer;
+    }
+    
+    void Update()
+    {
+        // Read DMX values from specific channels
+        // Channel 1 is at pixel (0, 0)
+        Color channel1 = dmxTexture.GetPixel(0, 0);
+        
+        // Extract DMX value (0-255) from color (0-1)
+        float dmxValue = channel1.r * 255f;
+        
+        Debug.Log($"Channel 1 DMX value: {dmxValue}");
+    }
+}
+#endif
+```
+
+## Technical Details
+
+### Buffer Structure
+
+- Each DMX channel occupies a 16x16 pixel block in the texture
+- Channel values are stored as normalized color values (0-1)
+- In standard mode: `R = G = B = DMX value / 255`
+- In expanded mode: `R = DMX red / 255, G = DMX green / 255, B = DMX blue / 255`
+
+### Memory Usage
+
+- **Vertical mode**: ~260KB texture (208x1072x4 bytes)
+- **Horizontal mode**: ~1.6MB texture (1920x208x4 bytes)
+- Buffer arrays: 871-1560 Color values in memory
+
+### Network Protocol
+
+GridReader expects OSC messages in the format:
+```
+Standard Mode:
+/VRSL/Channel/[n] [value]
+
+Expanded Mode:
+/VRSL/Channel/[n] [r] [g] [b]
+```
+
+## Related Components
+
+- [VRSL_LocalUIControlPanel](/api/vrsl-localuicontrolpanel) - Control panel for DMX settings
+- [VRStageLighting_DMX_Static](/api/vrstagelighting-dmx-static) - DMX-controlled fixtures that read from GridReader
+
+## Dependencies
+
+GridReader requires the **SharpOSC** library for OSC communication:
+- `SharpOSC.UDPListener` - Receives OSC messages
+- `SharpOSC.UDPSender` - Sends OSC messages
+- `SharpOSC.OscMessage` - OSC message structure
+
+These dependencies are included with VRSL.

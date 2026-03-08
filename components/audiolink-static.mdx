@@ -1,0 +1,319 @@
+---
+title: AudioLink Static Component
+description: AudioLink-reactive lighting fixture component for VR Stage Lighting
+---
+
+The `VRStageLighting_AudioLink_Static` component enables lighting fixtures to react dynamically to music through AudioLink integration. It provides frequency band reactivity, color sampling, theme colors, and automatic movement options.
+
+## Overview
+
+This component allows fixtures to respond to audio in real-time, creating immersive music-reactive lighting experiences. It supports AudioLink's four frequency bands, Color Chord integration, texture sampling, and theme color synchronization.
+
+## Inspector Properties
+
+### Audio Link Settings
+
+<ParamField path="enableAudioLink" type="bool" default="false">
+  Enable or disable Audio Link reaction for this fixture.
+</ParamField>
+
+<ParamField path="band" type="AudioLinkBandState" default="Bass">
+  The frequency band of the spectrum to react to. Options:
+  - `Bass` - Low frequencies (kick drums, bass)
+  - `Low_Mids` - Low-mid frequencies
+  - `High_Mids` - High-mid frequencies  
+  - `Treble` - High frequencies (hi-hats, cymbals)
+</ParamField>
+
+<ParamField path="delay" type="int" default="0" range="0-127">
+  The level of delay to add to the reaction. Higher values create a trailing effect behind the audio.
+</ParamField>
+
+<ParamField path="bandMultiplier" type="float" default="1.0" range="1.0-15.0">
+  Multiplier for the sensitivity of the reaction. Higher values make the fixture more reactive to quieter sounds.
+</ParamField>
+
+<ParamField path="enableColorChord" type="bool" default="false">
+  Enable Color Chord tinting of the light emission. Color Chord analyzes musical notes and assigns colors accordingly.
+</ParamField>
+
+### General Settings
+
+<ParamField path="globalIntensity" type="float" default="1" range="0-1">
+  Sets the overall intensity of the shader. Good for animating or scripting effects. Maximum value controlled by `finalIntensity`.
+</ParamField>
+
+<ParamField path="finalIntensity" type="float" default="1" range="0-1">
+  Sets the maximum brightness value of Global Intensity. Good for user-controlled brightness settings via UI.
+</ParamField>
+
+<ParamField path="finalIntensityComponentMode" type="bool" default="false">
+  Choose between setting Final Intensity for all meshes, or individual mesh types separately.
+</ParamField>
+
+<ParamField path="finalIntensityVolumetric" type="float" default="1" range="0-1">
+  Sets maximum brightness for volumetric meshes only (when Component Mode is enabled).
+</ParamField>
+
+<ParamField path="finalIntensityProjection" type="float" default="1" range="0-1">
+  Sets maximum brightness for projection meshes only (when Component Mode is enabled).
+</ParamField>
+
+<ParamField path="finalIntensityFixture" type="float" default="1" range="0-1">
+  Sets maximum brightness for fixture meshes only (when Component Mode is enabled).
+</ParamField>
+
+<ParamField path="lightColorTint" type="Color" default="Color.white * 2.0f">
+  The main color of the light. Will be modulated by AudioLink data and Color Chord when enabled.
+</ParamField>
+
+<ParamField path="enableColorTextureSampling" type="bool" default="false">
+  Enable sampling a separate texture for color. The color will be influenced by the intensity of the original emission color.
+</ParamField>
+
+<ParamField path="traditionalColorTextureSampling" type="bool" default="false">
+  Use traditional color sampling instead of white-to-black conversion.
+</ParamField>
+
+<ParamField path="textureSamplingCoordinates" type="Vector2" default="(0.5, 0.5)">
+  The UV coordinates to sample color from on the texture.
+</ParamField>
+
+<ParamField path="enableThemeColorSampling" type="bool" default="false">
+  Enable AudioLink Theme colors for synchronized color schemes across all AudioLink-enabled elements.
+</ParamField>
+
+<ParamField path="themeColorTarget" type="int" default="1" range="1-4">
+  Which AudioLink Theme Color to sample from (1-4).
+</ParamField>
+
+### Movement Settings
+
+<ParamField path="targetToFollow" type="Transform">
+  The target transform for this moving head fixture to follow. Useful for performer tracking or audio-reactive movement.
+</ParamField>
+
+### Fixture Settings
+
+<ParamField path="spinSpeed" type="float" default="4.0" range="-10 to 10">
+  Projection spin speed. Negative values spin counter-clockwise. Only active when `enableAutoSpin` is true.
+</ParamField>
+
+<ParamField path="enableAutoSpin" type="bool" default="false">
+  Enable automatic projection spinning.
+</ParamField>
+
+<ParamField path="selectGOBO" type="int" default="1" range="1-8">
+  Use this to change which projection pattern is selected.
+</ParamField>
+
+### Mesh Settings
+
+<ParamField path="objRenderers" type="MeshRenderer[]" required>
+  Array of mesh renderers that make up the light fixture. At least one mesh is required.
+</ParamField>
+
+<ParamField path="coneWidth" type="float" default="2.5" range="0-5.5">
+  Controls the radius of a mover/spot light cone.
+</ParamField>
+
+<ParamField path="coneLength" type="float" default="1.0" range="0.001-10">
+  Controls the length of the cone of a mover/spot light.
+</ParamField>
+
+<ParamField path="maxConeLength" type="float" default="8.5" range="0.275-10">
+  Controls the mesh length of the cone of a mover/spot light.
+</ParamField>
+
+## Configuration Steps
+
+### Basic AudioLink Setup
+
+1. Add the `VRStageLighting_AudioLink_Static` component to your fixture GameObject
+2. Assign the fixture's mesh renderers to the `objRenderers` array
+3. Enable `enableAudioLink`
+4. Select a `band` (Bass for bass-reactive, Treble for high-frequency reactive, etc.)
+5. Adjust `bandMultiplier` to control sensitivity
+
+### Color Chord Setup
+
+For music note-based color reactions:
+
+1. Enable `enableColorChord`
+2. Set a neutral `lightColorTint` (white recommended)
+3. AudioLink will automatically assign colors based on musical notes
+
+### Theme Color Synchronization
+
+To match colors with other AudioLink elements:
+
+1. Enable `enableThemeColorSampling`
+2. Set `themeColorTarget` (1-4) to choose which theme color to use
+3. All elements using the same theme color will stay synchronized
+
+### Texture Sampling
+
+For video or gradient-based colors:
+
+1. Enable `enableColorTextureSampling`
+2. Set `textureSamplingCoordinates` to sample from desired UV position
+3. Configure the texture in the fixture's shader material
+4. Enable `traditionalColorTextureSampling` for full RGB sampling
+
+### Target Following
+
+For automatic fixture tracking:
+
+1. Assign a Transform to `targetToFollow`
+2. The fixture head will automatically aim at the target
+3. Useful for following performers or creating spotlight effects
+
+## Example Setups
+
+### Bass Reactive Wash Light
+
+```
+Audio Link Settings:
+  enableAudioLink: true
+  band: Bass
+  delay: 10
+  bandMultiplier: 2.5
+  enableColorChord: false
+  
+General Settings:
+  globalIntensity: 1
+  finalIntensity: 1
+  lightColorTint: (2, 0, 0, 1)  // Red
+  
+Fixture Settings:
+  coneWidth: 3.5
+  coneLength: 5.0
+```
+
+### Color Chord Moving Head
+
+```
+Audio Link Settings:
+  enableAudioLink: true
+  band: High_Mids
+  delay: 0
+  bandMultiplier: 3.0
+  enableColorChord: true
+  
+General Settings:
+  lightColorTint: (2, 2, 2, 1)  // White
+  
+Fixture Settings:
+  enableAutoSpin: true
+  spinSpeed: 2.0
+  selectGOBO: 3
+```
+
+### Theme Color Synchronized Light
+
+```
+Audio Link Settings:
+  enableAudioLink: true
+  band: Treble
+  bandMultiplier: 4.0
+  enableThemeColorSampling: true
+  themeColorTarget: 1
+  
+General Settings:
+  globalIntensity: 1
+  lightColorTint: (2, 2, 2, 1)
+```
+
+### Texture Sampled Video Light
+
+```
+Audio Link Settings:
+  enableAudioLink: true
+  band: Low_Mids
+  bandMultiplier: 2.0
+  
+General Settings:
+  enableColorTextureSampling: true
+  textureSamplingCoordinates: (0.5, 0.5)
+  traditionalColorTextureSampling: true
+```
+
+## Integration with Other Components
+
+### AudioLink
+
+Requires an AudioLink prefab in the scene:
+- Place the AudioLink prefab in your world
+- No direct reference needed - uses global textures
+- Fixtures automatically detect AudioLink presence
+
+### Local UI Control Panel
+
+Integrates with `VRSL_LocalUIControlPanel` for:
+- Global intensity control for all AudioLink fixtures
+- Quality mode settings
+- AudioLink enable/disable toggle
+- Per-mesh-type intensity in Component Mode
+
+### DMX System
+
+Can coexist with DMX fixtures:
+- Use Control Panel to enable both DMX and AudioLink modes
+- Mix DMX and AudioLink fixtures in the same scene
+- Some fixtures can switch between modes dynamically
+
+## Public Methods
+
+### _UpdateInstancedProperties()
+
+Forces an update of all material properties. Call after changing properties via Udon.
+
+### _UpdateInstancedPropertiesSansAudioLink()
+
+Updates properties with AudioLink disabled. Useful for temporarily disabling AudioLink reactivity.
+
+### _SetProps()
+
+Initializes the MaterialPropertyBlock. Called automatically on Start.
+
+## Udon Script Properties
+
+Access these properties from Udon scripts:
+
+- `EnableAudioLink` - Get/Set AudioLink enabled state
+- `Band` - Get/Set frequency band (AudioLinkBandState enum)
+- `Delay` - Get/Set reaction delay (0-127)
+- `BandMultiplier` - Get/Set sensitivity multiplier (1-15)
+- `LightColorTint` - Get/Set light color
+- `GlobalIntensity` - Get/Set global intensity (0-1)
+- `FinalIntensity` - Get/Set maximum intensity (0-1)
+- `ConeWidth` - Get/Set cone radius
+- `ConeLength` - Get/Set cone length
+- `SelectGOBO` - Get/Set selected projection (1-8)
+- `SpinSpeed` - Get/Set projection spin speed
+- `ProjectionSpin` - Get/Set auto spin enabled
+- `ColorChord` - Get/Set Color Chord enabled
+- `ColorTextureSampling` - Get/Set texture sampling enabled
+- `ThemeColorSampling` - Get/Set theme color enabled
+- `ThemeColorTarget` - Get/Set theme color slot (1-4)
+
+## Performance Notes
+
+- Supports up to 5 mesh renderers per fixture
+- Uses MaterialPropertyBlock for efficient rendering
+- Component Mode allows granular intensity control
+- AudioLink adds minimal overhead when properly configured
+- Higher `delay` values create smooth trailing effects but use more memory
+
+## Frequency Band Guide
+
+- **Bass**: Best for low-energy, pulsing effects. Reacts to kick drums and bass instruments
+- **Low_Mids**: Good for mid-range energy. Reacts to vocals and rhythm instruments
+- **High_Mids**: Great for melodic content. Reacts to lead instruments
+- **Treble**: Perfect for high-energy, fast reactions. Reacts to hi-hats and cymbals
+
+## See Also
+
+- [DMX Static Component](/components/dmx-static) - DMX-controlled fixtures
+- [Local UI Control Panel](/components/local-ui-control-panel) - User controls and settings
+- [AudioLink Documentation](https://github.com/llealloo/vrc-udon-audio-link) - Official AudioLink reference

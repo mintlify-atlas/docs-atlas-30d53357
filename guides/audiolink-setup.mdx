@@ -1,0 +1,445 @@
+---
+title: AudioLink Integration Setup
+description: Configure AudioLink-reactive lighting for music-driven visual experiences in VR Stage Lighting
+---
+
+## Overview
+
+VRSL integrates deeply with AudioLink to create music-reactive lighting effects. AudioLink fixtures respond to audio frequencies in real-time, creating dynamic lighting that pulses, strobes, and moves with the music.
+
+<Note>
+AudioLink v0.3.0 or newer is required for VRSL. The integration uses shader-based AudioLink for minimal performance overhead.
+</Note>
+
+## What is AudioLink?
+
+AudioLink is a VRChat system that analyzes audio in real-time and makes that data available to shaders and scripts. It divides audio into frequency bands (Bass, Low Mids, High Mids, Treble) that can drive visual effects.
+
+### VRSL AudioLink Features
+- Real-time frequency band reactions
+- Color Chord support (colors sync with music)
+- AudioLink Theme Color integration
+- Texture sampling for custom color patterns
+- Delay and sensitivity controls
+- Minimal CPU overhead (GPU-accelerated)
+
+## Prerequisites
+
+### Required
+- VRSL package installed via VPM
+- AudioLink 0.3.0+ package
+- VRChat SDK3 for Worlds
+- UdonSharp
+- A music/audio source (USharpVideo, ProTV, etc.)
+
+### Recommended
+- PostProcessing Stack V2 (for bloom effects)
+- Basic understanding of audio frequency bands
+
+## Installation Steps
+
+<Steps>
+
+### Install AudioLink
+
+1. Add the AudioLink repository to VCC if not already added
+2. In your VRChat Creator Companion:
+   - Open your project
+   - Navigate to "Manage Packages"
+   - Find "AudioLink" and click Add
+3. Wait for Unity to import
+
+### Add AudioLink Prefab
+
+1. In Unity, navigate to `VRSL > Control Panel`
+2. In the Control Panel window, find "AudioLink Spawns" section
+3. Click "Spawn AudioLink (VRSL Edition)" for the VRSL-configured version
+   - Alternatively, click "Spawn Standard AudioLink" for the default version
+4. The AudioLink prefab appears in your scene at origin
+
+<Tip>
+The VRSL Edition AudioLink prefab includes pre-configured settings optimized for stage lighting. The Standard version gives you more manual control.
+</Tip>
+
+### Add AudioLink Controller
+
+1. In VRSL Control Panel, under AudioLink Spawns
+2. Click "Spawn AudioLink Controller (VRSL Edition)"
+3. This adds the UI panel for controlling AudioLink settings in-world
+4. Position it near your DJ booth or control area
+
+### Configure Audio Source
+
+1. Select the AudioLink prefab in your hierarchy
+2. In the Inspector, find the AudioLink component
+3. Connect your audio source:
+   - Drag your video player GameObject into the "Audio Source" field
+   - Or assign the AudioSource component directly
+4. Adjust AudioLink settings:
+   - **Gain**: Overall audio sensitivity (start at 1.0)
+   - **Bass/Treble/etc**: Individual band multipliers
+   - **Theme Colors**: Set up to 4 colors for theme color mode
+
+### Add AudioLink Fixtures
+
+1. Open VRSL Control Panel
+2. Navigate to the "Spawns" section  
+3. Choose your fixture type and select the **AudioLink** variant:
+   - VRSL-AudioLink-Spotlight
+   - VRSL-AudioLink-Washlight
+   - VRSL-AudioLink-Blinder
+   - VRSL-AudioLink-Flasher
+   - VRSL-AudioLink-PAR
+   - VRSL-AudioLink-LightBar
+   - VRSL-AudioLink-Discoball
+   - VRSL-AudioLink-Laser
+4. Place fixtures in your scene
+
+</Steps>
+
+## Configuring AudioLink Fixtures
+
+### Basic Settings
+
+Select an AudioLink fixture and examine the `VRStageLighting_AudioLink_Static` component:
+
+**Audio Link Settings:**
+- **Enable AudioLink**: Master toggle for AudioLink reaction
+- **Band**: Which frequency band to react to
+  - Bass (0) - Low frequency, kick drums
+  - Low Mids (1) - Bass guitar, lower vocals  
+  - High Mids (2) - Vocals, guitars
+  - Treble (3) - Hi-hats, cymbals
+- **Delay**: Frame delay (0-127) for creating trailing effects
+- **Band Multiplier**: Sensitivity (1.0-15.0), higher = more reactive
+
+**General Settings:**
+- **Global Intensity**: Master brightness (0-1)
+- **Final Intensity**: Maximum brightness limit
+- **Light Color Tint**: Base emission color
+
+### Advanced Color Settings
+
+**Color Chord:**
+- Enable **Color Chord** to sync fixture color with AudioLink's Color Chord
+- Colors automatically change based on musical key/chords
+- Great for creating cohesive color schemes across all lights
+
+**Theme Color Sampling:**
+- Enable **Theme Color Sampling** to use AudioLink's preset theme colors
+- **Theme Color Target**: Choose which theme color (1-4)
+- Set theme colors in the AudioLink prefab inspector
+- Useful for maintaining consistent venue branding colors
+
+**Texture Sampling:**
+- Enable **Color Texture Sampling** to sample colors from a texture
+- Set **Texture Sampling Coordinates** (UV coordinates 0-1)
+- Configure sampling texture in VRSL Control Panel
+- **Traditional Sampling**: Use full RGB color instead of white-to-black conversion
+- Great for creating complex color patterns synced to music
+
+<Tip>
+Combine Color Chord with low Band Multiplier (2-4) for subtle, musical color changes. Use high multipliers (8-15) for intense strobe effects.
+</Tip>
+
+### Movement and Effects
+
+**Target Following:**
+- Assign a Transform to **Target To Follow**
+- Moving head fixtures will track the target
+- Great for performer spotlights or dynamic effects
+- Can be combined with AudioLink intensity modulation
+
+**Projection Effects:**
+- **Enable Auto Spin**: Automatic gobo rotation
+- **Spin Speed**: Rotation speed (-10 to 10)
+- **Select GOBO**: Choose projection pattern (1-8)
+- Spin speed can pulse with audio when AudioLink is enabled
+
+**Cone/Beam Settings:**
+- **Cone Width**: Beam spread (0-5.5)
+- **Cone Length**: Beam distance (0-10)
+- **Max Cone Length**: Volumetric mesh length (0.275-10)
+- These can be modulated by audio intensity
+
+### Component-Based Intensity Control
+
+<Note>
+Available in VRSL 2.6.2+
+</Note>
+
+Control individual fixture components separately:
+
+1. Enable **Final Intensity Component Mode**
+2. Set individual intensities:
+   - **Final Intensity Volumetric**: Light beam brightness
+   - **Final Intensity Projection**: Projected gobo brightness  
+   - **Final Intensity Fixture**: Housing/body brightness
+3. Useful for creating depth and preventing oversaturation
+
+## Creating Music-Reactive Scenes
+
+### Frequency Band Strategy
+
+**Bass Band (Kicks, Sub-bass):**
+- Use for impactful effects
+- Large wash lights for stage wash
+- Blinders for impact hits
+- Disco balls for rhythmic sparkle
+- Low multiplier (2-4) for subtle pulse
+
+**Low Mids (Bass guitar, lower vocals):**
+- Medium-intensity effects
+- Side/back fill lighting
+- Complementary colors to bass band
+- Medium multiplier (4-6)
+
+**High Mids (Vocals, guitars):**
+- Detailed, expressive reactions
+- Front spotlights on performers
+- Accent lighting
+- Higher multiplier (6-10)
+
+**Treble (Hi-hats, cymbals):**
+- Quick, flashy effects
+- Strobes and blinders
+- Laser effects
+- Highest multiplier (8-15) for maximum impact
+
+### Example Configurations
+
+**Subtle Ambient Lighting:**
+```
+Fixture: Washlight
+Band: Bass
+Multiplier: 2.0
+Delay: 0
+Color Chord: Enabled
+```
+
+**Aggressive Strobe:**
+```
+Fixture: Blinder  
+Band: Treble
+Multiplier: 12.0
+Delay: 0
+Color: White
+```
+
+**Trailing Effect:**
+```
+Fixture: Spotlight (multiple copies)
+Band: High Mids
+Multiplier: 5.0
+Delay: 0, 5, 10, 15 (different per fixture)
+Color Chord: Enabled
+```
+
+## AudioLink Custom Render Textures
+
+VRSL uses Custom Render Textures (CRTs) to interpolate AudioLink data smoothly:
+
+### Accessing CRT Settings
+
+1. Open VRSL Control Panel
+2. Navigate to Options > CRT Materials
+3. Select "AudioLink Interpolation"
+4. View/edit the interpolation material properties
+
+### Interpolation Settings
+
+- **Smoothness**: Controls how quickly lights react to audio changes
+- Lower values = faster response, more jittery
+- Higher values = slower response, smoother motion
+- Default is usually optimal
+
+## Local UI Control Panel
+
+The VRSL Local UI Control Panel provides in-world controls for AudioLink fixtures:
+
+### AudioLink Sliders
+
+Users can locally adjust:
+- Master intensity (affects all lights)
+- Fixture intensity (light bodies only)
+- Volumetric intensity (light beams)
+- Projection intensity (gobos)
+- Disco ball intensity
+- Laser intensity
+
+### Quality Settings
+
+Players can adjust rendering quality:
+- Volumetric quality (High/Medium/Low)
+- Projection quality (High/Low)
+- Disco ball quality (High/Low)
+- 3D noise toggle (for volumetrics)
+
+<Tip>
+Lock quality modes in the Control Panel inspector to prevent users from changing them if you want to maintain consistent visuals.
+</Tip>
+
+## Combining DMX and AudioLink
+
+You can use both DMX and AudioLink fixtures together:
+
+### Hybrid Lighting Design
+
+**Use DMX for:**
+- Precise, programmed lighting cues
+- Moving head positioning and color
+- Timed sequences
+- Performer spotlights
+
+**Use AudioLink for:**
+- Reactive background/fill lighting
+- Audience area effects  
+- Dynamic color changes
+- Strobe/impact effects
+
+### Example Setup
+
+```
+Stage Layout:
+- 4x DMX Moving Heads (Front truss, programmed)
+- 8x AudioLink Wash Lights (Back/side, bass reactive)
+- 4x AudioLink Blinders (Upstage, treble reactive)
+- 2x AudioLink Lasers (Overhead, high-mid reactive)
+- 1x DMX Disco Ball (Center, programmed rotation)
+```
+
+## Testing AudioLink Setup
+
+<Steps>
+
+### Test in Unity Editor
+
+1. Enter Play Mode
+2. Play audio through your audio source
+3. Watch the AudioLink prefab inspector:
+   - Audio waveform should be visible
+   - Frequency bars should react to audio
+4. Observe fixtures reacting to audio
+
+### Adjust Sensitivity
+
+1. If lights barely react:
+   - Increase AudioLink Gain
+   - Increase fixture Band Multiplier
+   - Check audio source volume
+2. If lights are oversaturated:
+   - Decrease AudioLink Gain
+   - Decrease fixture Band Multiplier  
+   - Lower Final Intensity
+
+### Test Different Music Genres
+
+- **Electronic/EDM**: High treble content, strong bass
+- **Rock**: Balanced across bands
+- **Hip-Hop**: Heavy bass emphasis
+- **Classical**: Dynamic range, subtle reactions
+
+Adjust band assignments and multipliers based on the music style your venue will feature.
+
+</Steps>
+
+## Common Issues
+
+### Fixtures Not Reacting
+
+**Check:**
+- AudioLink prefab has audio source assigned
+- Audio is actually playing
+- "Enable AudioLink" is checked on fixtures
+- AudioLink CRTs are enabled in Control Panel
+- AudioLink package is correctly installed
+
+### Lights Always On or Flickering
+
+**Solutions:**
+- Lower Band Multiplier
+- Reduce AudioLink Gain
+- Check for audio clipping
+- Verify audio source is in Linear mode (not logarithmic)
+
+### Colors Look Wrong
+
+**Verify:**
+- Color Chord is configured correctly in AudioLink prefab
+- Theme Colors are set if using Theme Color Sampling
+- Light Color Tint is not too heavily colored
+- No competing color sources active
+
+### Performance Issues
+
+**Optimize:**
+- Reduce number of AudioLink fixtures
+- Lower volumetric quality settings
+- Disable 3D noise on volumetrics
+- Use lower resolution meshes
+- See [Performance Optimization](/guides/performance-optimization) guide
+
+## Advanced Techniques
+
+### Delay-Based Effects
+
+Create cascading or wave effects:
+
+1. Duplicate an AudioLink fixture multiple times
+2. Arrange in a line or grid
+3. Set increasing Delay values: 0, 5, 10, 15, 20...
+4. Result: Light wave travels across fixtures
+
+### Theme Color Choreography
+
+Program color changes for specific song sections:
+
+1. Use Udon to change AudioLink Theme Colors
+2. Set fixtures to Theme Color Sampling mode
+3. Change theme colors at key moments (chorus, drop, etc.)
+4. All fixtures change color simultaneously
+
+### Texture-Based Color Palettes
+
+1. Create a texture with your color palette
+2. Assign to Control Panel Video Sample Target Texture
+3. Enable Color Texture Sampling on fixtures
+4. Set different UV coordinates per fixture
+5. Result: Coordinated colors from a single texture
+
+## Best Practices
+
+<Tip>
+**For Music Venues:**
+- Start with lower Band Multipliers (2-5) and increase until reactive
+- Use Color Chord for cohesive look
+- Reserve treble band for impact effects (strobes)
+- Place bass-reactive lights for maximum visual impact
+- Test with multiple music genres
+</Tip>
+
+**Performance:**
+- Limit to 30-50 AudioLink fixtures total
+- Use Final Intensity Component Mode to fine-tune brightness
+- Allow users to adjust quality via Local UI Control Panel
+- Disable AudioLink on fixtures during non-music times
+
+**Workflow:**
+- Group fixtures by frequency band in hierarchy
+- Name clearly: "AudioLink-Bass-Wash-L"
+- Document your band assignments
+- Create "scenes" with different band/multiplier presets
+- Use Udon to switch between lighting scenes
+
+## Next Steps
+
+- Combine with [DMX Setup](/guides/dmx-setup) for hybrid control
+- Optimize your setup with [Performance Optimization](/guides/performance-optimization)
+- Learn about [Video Streaming](/guides/streaming-setup) for events
+- Create [Custom Fixtures](/guides/custom-fixtures) with AudioLink support
+
+## Resources
+
+- [AudioLink GitHub](https://github.com/llealloo/vrc-udon-audio-link)
+- [VRSL Discord](https://vrsl.dev)
+- [AudioLink Documentation](https://github.com/llealloo/vrc-udon-audio-link/wiki)

@@ -1,0 +1,278 @@
+---
+title: Installation
+description: Install VR Stage Lighting using VRChat Creator Companion (VCC)
+---
+
+VR Stage Lighting is distributed as a VPM (VRChat Package Manager) package, designed to be installed through the VRChat Creator Companion. This is the officially supported installation method.
+
+## Prerequisites
+
+Before installing VR Stage Lighting, ensure you have the following:
+
+<CardGroup cols={2}>
+  <Card title="Unity 2019.4" icon="unity">
+    Unity 2019.4.x is required for VRChat world development
+  </Card>
+  <Card title="VRChat Creator Companion" icon="download">
+    The official VCC tool for managing VRChat projects
+  </Card>
+</CardGroup>
+
+## Required Dependencies
+
+VR Stage Lighting requires the following packages to function:
+
+### Core Requirements
+
+<Steps>
+  <Step title="VRChat SDK3 - Worlds">
+    The VRChat SDK for world creation. Installed automatically via VCC.
+  </Step>
+  
+  <Step title="UdonSharp">
+    Required for scripting functionality. Installed automatically with VRChat SDK3.
+  </Step>
+  
+  <Step title="AudioLink v0.3.1+">
+    Required dependency for audio-reactive lighting features. Must be version 0.3.1 or newer.
+    
+    <Note>
+      VRSL includes a custom "VRSL Edition" of the AudioLink prefab optimized for stage lighting.
+    </Note>
+  </Step>
+</Steps>
+
+### Optional Dependencies
+
+<AccordionGroup>
+  <Accordion title="PostProcessing Stack V2">
+    Available through Unity Package Manager. Recommended for bloom effects and visual enhancement.
+    
+    The VRSL Local UI Control Panel includes bloom control features that require this package.
+  </Accordion>
+  
+  <Accordion title="Video Players">
+    For DMX control via video stream:
+    - **USharp Video Player** (legacy support)
+    - **VideoTXL** (recommended)
+    - **ProTV** (recommended)
+    
+    <Warning>
+      As of version 2.5.0, video player packages are separate add-ons. TekOSC is the only DMX reader that comes pre-installed.
+    </Warning>
+  </Accordion>
+  
+  <Accordion title="VRSL Grid Node">
+    A separate paid application for DMX control via Artnet.
+    
+    - Enables real-time DMX512 control
+    - Supports any Artnet-compatible software/hardware
+    - Not required for AudioLink-only setups
+    - Available at: https://gumroad.com/l/xYaPu
+  </Accordion>
+</AccordionGroup>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Install VRChat Creator Companion">
+    Download and install the VRChat Creator Companion from the official VRChat website.
+    
+    Visit: https://vrchat.com/home/download
+  </Step>
+  
+  <Step title="Create or Open Your Project">
+    Use VCC to create a new VRChat world project or open an existing one.
+    
+    <CodeGroup>
+    ```bash New Project
+    # Via VCC GUI:
+    # 1. Click "New" → "New World Project"
+    # 2. Select Unity 2019.4.x
+    # 3. Name your project
+    ```
+    
+    ```bash Existing Project
+    # Via VCC GUI:
+    # 1. Click "Add Existing Project"
+    # 2. Select your project folder
+    # 3. VCC will migrate it if needed
+    ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Add VR Stage Lighting Repository">
+    Add the VR Stage Lighting package repository to VCC:
+    
+    1. Open VCC Settings
+    2. Navigate to "Packages" → "Add Repository"
+    3. Add the VRSL repository URL
+    
+    <Note>
+      Alternatively, you can add VRSL directly from the GitHub releases page using the VCC's "Add Package from URL" feature.
+    </Note>
+  </Step>
+  
+  <Step title="Install AudioLink">
+    Before installing VRSL, ensure AudioLink is installed:
+    
+    1. In VCC, select your project
+    2. Navigate to "Manage Packages"
+    3. Find "AudioLink" in the package list
+    4. Click "Add" or ensure version is 0.3.1 or higher
+  </Step>
+  
+  <Step title="Install VR Stage Lighting">
+    Install the VRSL package:
+    
+    1. In the "Manage Packages" section
+    2. Find "VR Stage Lighting" (com.acchosen.vr-stage-lighting)
+    3. Click "Add" to install the latest version (v2.8.1+)
+    
+    <Note>
+      VCC will automatically resolve and install required dependencies.
+    </Note>
+  </Step>
+  
+  <Step title="Open Your Project in Unity">
+    Launch Unity from VCC:
+    
+    1. Click "Open Project" in VCC
+    2. Wait for Unity to import all packages
+    3. Verify installation in the Unity Package Manager
+  </Step>
+</Steps>
+
+## Verify Installation
+
+After installation, verify that VRSL is properly installed:
+
+<Steps>
+  <Step title="Check Package Manager">
+    In Unity, go to **Window → Package Manager**
+    
+    - Switch to "Packages: In Project"
+    - Look for "VR Stage Lighting" in the list
+    - Current version should be 2.8.1 or newer
+  </Step>
+  
+  <Step title="Locate VRSL Assets">
+    In the Project window, you should see:
+    
+    ```
+    Packages/
+    └── VR Stage Lighting/
+        ├── Runtime/
+        │   ├── Prefabs/
+        │   ├── Materials/
+        │   ├── Shaders/
+        │   └── Example Scenes/
+        └── Editor/
+    ```
+  </Step>
+  
+  <Step title="Check for VRSL Menu">
+    In Unity's top menu bar, look for the **VRSL** dropdown menu.
+    
+    This menu provides utilities like:
+    - Generate Unique VRSL Materials
+    - DMX Patch Export tools
+    - VRSL Manager Window
+  </Step>
+</Steps>
+
+## Post-Installation Setup
+
+<Note>
+  The VRSL Control Panel and example scenes are included in the package. See the [Quickstart Guide](/quickstart) for setting up your first lighting fixture.
+</Note>
+
+### Install Optional Components
+
+Depending on your use case, you may want to install:
+
+<CardGroup cols={2}>
+  <Card title="PostProcessing" icon="sparkles">
+    For bloom and visual effects:
+    
+    **Window → Package Manager → Unity Registry → Post Processing**
+  </Card>
+  
+  <Card title="Video Player Packages" icon="video">
+    For DMX control via video stream:
+    
+    Install VideoTXL or ProTV packages separately via their respective repositories.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="AudioLink dependency not found">
+    Ensure AudioLink v0.3.1 or higher is installed before VRSL.
+    
+    1. Check Package Manager for AudioLink
+    2. Update to latest version if needed
+    3. Reimport VRSL package if necessary
+  </Accordion>
+  
+  <Accordion title="Shaders not compiling">
+    If VRSL shaders show errors:
+    
+    1. Ensure Unity 2019.4.x is being used
+    2. Check that all dependencies are installed
+    3. Try reimporting the VRSL package
+    4. Check Console for specific shader errors
+  </Accordion>
+  
+  <Accordion title="Missing prefabs or assets">
+    If prefabs appear broken or missing:
+    
+    1. Verify AudioLink is properly installed
+    2. Check that UdonSharp compiled successfully
+    3. Look for errors in the Console
+    4. Try "Assets → Reimport All"
+  </Accordion>
+  
+  <Accordion title="VCC can't find the package">
+    If VRSL doesn't appear in VCC:
+    
+    1. Ensure you've added the VRSL repository
+    2. Click "Refresh Packages" in VCC
+    3. Check your internet connection
+    4. Try adding the package from GitHub releases URL
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+Once installation is complete:
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Set up your first lighting fixture and learn the basics
+  </Card>
+  
+  <Card title="Example Scenes" icon="folder-open">
+    Explore included example scenes:
+    - AudioLink-Scenes (audio-reactive setups)
+    - DMX-EditorViaOSCScenes (DMX testing)
+    - DMX-AvatarTesting (avatar integration)
+  </Card>
+</CardGroup>
+
+## Version Information
+
+<Info>
+  **Current Version:** 2.8.1
+  
+  **Minimum Requirements:**
+  - Unity 2019.4
+  - AudioLink 0.3.1+
+  - VRChat SDK3 - Worlds
+  - UdonSharp (included with SDK3)
+</Info>
+
+<Warning>
+  VRSL is designed for **VRChat PC worlds**. While some features may work on Quest, full functionality requires PC hardware. Quest compatibility features like depth light toggle and 3D noise toggle are available in the VRSL Control Panel.
+</Warning>

@@ -1,0 +1,581 @@
+---
+title: Video Streaming Configuration
+description: Set up reliable video streaming for DMX control and live events with VR Stage Lighting
+---
+
+## Overview
+
+Video streaming is the foundation of VRSL's DMX system. This guide covers how to configure your streaming setup for optimal DMX data transmission and live event performance.
+
+<Note>
+While streaming is required for DMX control, AudioLink-only setups do not need external video streaming.
+</Note>
+
+## Understanding VRSL Streaming
+
+VRSL encodes DMX data as colored pixels in a video grid. This video is then streamed to VRChat, where VRSL's shaders decode the pixels back into lighting data.
+
+### Why Video Streaming?
+
+**Advantages:**
+- **Universal Sync**: All players see the same data
+- **Works Today**: No waiting for VRChat features
+- **Flexible**: Any video player can work
+- **Live Control**: Real-time DMX during performances
+
+**Challenges:**
+- Latency (typically 2-8 seconds)
+- Requires bandwidth
+- Compression can affect data quality
+- Requires external streaming setup
+
+## Streaming Architecture
+
+```
+DMX Software → Artnet Grid Node → OBS/Streaming Software → 
+Streaming Server → VRChat Video Player → VRSL Shaders → Lights
+```
+
+## Prerequisites
+
+### Hardware Requirements
+
+**Minimum:**
+- CPU: Intel i5 8th gen / AMD Ryzen 5 2600 or better
+- GPU: NVIDIA GTX 1060 / AMD RX 580 or better
+- RAM: 16GB
+- Upload Speed: 10 Mbps minimum
+- Extra Monitor: 1920x1080 resolution
+
+**Recommended:**
+- CPU: Intel i7 10th gen / AMD Ryzen 7 3700X or better  
+- GPU: NVIDIA RTX 2060 / AMD RX 5700 XT or better
+- RAM: 32GB
+- Upload Speed: 25+ Mbps
+- Dedicated streaming PC (for large events)
+- Wired network connection
+
+### Software Requirements
+
+**Streaming Software (choose one):**
+- OBS Studio (recommended, free)
+- Streamlabs OBS
+- XSplit
+- vMix (professional)
+
+**Optional:**
+- Artnet Grid Node (for DMX control)
+- Local streaming server (for reduced latency)
+- Network monitoring tools
+
+## OBS Studio Configuration
+
+### Installation
+
+<Steps>
+
+1. Download OBS Studio from [obsproject.com](https://obsproject.com)
+2. Install with default settings
+3. Launch OBS and complete first-time setup wizard
+4. Skip the auto-configuration wizard (we'll configure manually)
+
+</Steps>
+
+### Video Settings
+
+1. Navigate to **Settings > Video**
+
+**Base (Canvas) Resolution:**
+- Set to `1920x1080`
+- This is your working resolution
+
+**Output (Scaled) Resolution:**  
+- Set to `1920x1080`
+- Must match base resolution for DMX (no scaling)
+
+**Downscale Filter:**
+- Set to `Lanczos` (highest quality)
+- Only matters if you're scaling (which you shouldn't for DMX)
+
+**Common FPS Values:**
+- Set to `30` for standard streaming
+- Can use `60` for smoother motion (requires more bandwidth)
+
+<Warning>
+Do NOT use different base and output resolutions for DMX streaming. This can corrupt the DMX data grid.
+</Warning>
+
+### Output Settings
+
+1. Navigate to **Settings > Output**
+2. Set **Output Mode** to `Advanced`
+
+**Streaming Tab:**
+
+**Encoder:**
+- `NVIDIA NVENC H.264` (if you have NVIDIA GPU) - Recommended
+- `QuickSync H.264` (if you have Intel integrated graphics)
+- `x264` (software encoding, CPU intensive)
+
+**Rate Control:**
+- Set to `CBR` (Constant Bitrate)
+- Ensures consistent quality for DMX data
+
+**Bitrate:**
+- Minimum: `6000 Kbps`
+- Recommended: `8000-12000 Kbps`
+- High Quality: `15000-20000 Kbps`
+- Balance based on your upload speed
+
+<Tip>
+Higher bitrate = better DMX data quality = less movement jitter. Use the highest bitrate your connection can reliably sustain.
+</Tip>
+
+**Keyframe Interval:**
+- Set to `2` seconds
+- Lower values reduce latency
+- Don't go below 1
+
+**Preset:**
+- NVENC: `Quality` or `High Quality`
+- QuickSync: `Quality`  
+- x264: `veryfast` or `faster`
+
+**Profile:**
+- Set to `high`
+
+**Look-ahead / Psycho Visual Tuning:**
+- Disable both
+- These can interfere with DMX data accuracy
+
+### Advanced Settings
+
+1. Navigate to **Settings > Advanced**
+
+**Video:**
+- **Color Format**: `NV12`
+- **Color Space**: `709`
+- **Color Range**: `Partial`
+
+**Stream Delay:**
+- Start with `0`
+- Can add delay if needed for sync
+
+**Reconnect:**
+- Enable **Automatically reconnect**
+- Retry Delay: `10` seconds
+- Maximum Retries: `20`
+
+### Scene Setup for DMX
+
+<Steps>
+
+### Create DMX Scene
+
+1. In OBS, create a new Scene called "DMX Grid"
+2. This scene will contain only the Artnet Grid Node output
+
+### Add Grid Node Source
+
+**Option A: Window Capture (Recommended)**
+1. Click **+** under Sources
+2. Add **Window Capture**
+3. Name it "Artnet Grid Node"
+4. Select the Artnet Grid Node window
+5. **Capture Method**: `Windows 10 (1903 and up)`
+6. Enable **Capture Cursor**: No
+
+**Option B: Display Capture**
+1. Click **+** under Sources  
+2. Add **Display Capture**
+3. Name it "Grid Monitor"
+4. Select the display showing Grid Node
+5. Enable **Capture Cursor**: No
+
+### Configure Source
+
+1. Right-click the source in OBS
+2. Select **Transform > Fit to Screen**
+3. Ensure no black bars or cropping
+4. Verify resolution is exactly 1920x1080
+
+<Warning>
+**Critical**: Do NOT apply any filters to the DMX grid source:
+- No color correction
+- No sharpening
+- No scaling filters
+- No chroma key
+- No effects
+
+These will corrupt the DMX data.
+</Warning>
+
+</Steps>
+
+## Streaming Destinations
+
+### Local Streaming Server (Lowest Latency)
+
+Run your own RTMP server for minimum latency:
+
+**Using nginx-rtmp:**
+
+<Steps>
+
+1. Install nginx with rtmp module
+2. Configure nginx.conf:
+```nginx
+rtmp {
+    server {
+        listen 1935;
+        chunk_size 4096;
+        
+        application live {
+            live on;
+            record off;
+        }
+    }
+}
+```
+3. In OBS, set **Stream** settings:
+   - Service: `Custom`
+   - Server: `rtmp://localhost/live`  
+   - Stream Key: `vrsl`
+4. Access stream at: `rtmp://your-ip/live/vrsl`
+
+</Steps>
+
+**Advantages:**
+- Lowest possible latency (0.5-2 seconds)
+- No external service dependency
+- No bandwidth costs
+- Full control
+
+**Disadvantages:**
+- Requires server setup
+- Must manage port forwarding
+- Limited to your upload speed
+
+### YouTube Live (Balanced)
+
+Good balance of latency and reliability:
+
+<Steps>
+
+1. Go to [YouTube Studio](https://studio.youtube.com)
+2. Click **Create > Go Live**
+3. Choose **Streaming Software**
+4. Configure:
+   - **Latency**: Ultra Low (1-2 seconds)
+   - **Visibility**: Unlisted (for DMX streams)
+5. Copy **Stream URL** and **Stream Key**
+6. In OBS:
+   - Service: `YouTube - RTMPS`
+   - Server: Primary YouTube ingest server
+   - Stream Key: [paste your key]
+
+</Steps>
+
+**Advantages:**
+- Ultra-low latency mode available
+- Reliable infrastructure
+- Free
+- Can serve multiple worlds simultaneously
+
+**Disadvantages:**
+- Still 2-5 second latency
+- Requires YouTube account
+- Subject to YouTube terms
+
+### Twitch (Alternative)
+
+Similar to YouTube:
+
+<Steps>
+
+1. Go to [Twitch Dashboard](https://dashboard.twitch.tv)
+2. Enable **Low Latency Mode**
+3. Copy **Stream Key**
+4. In OBS:
+   - Service: `Twitch`  
+   - Server: Closest server
+   - Stream Key: [paste your key]
+
+</Steps>
+
+**Advantages:**
+- Low latency mode
+- Gaming-focused platform
+- Reliable
+
+**Disadvantages:**
+- 3-6 second latency
+- Less control than local server
+- Requires Twitch account
+
+## Video Player Setup in Unity
+
+Once streaming, configure Unity to receive the stream:
+
+### Choose Video Player System
+
+VRSL supports multiple video player systems:
+
+**TekOSC (Recommended):**
+- Uses OSC instead of traditional video
+- Lower latency
+- Better reliability
+- Included with VRSL
+
+**USharpVideo:**
+- Most common in VRChat
+- Good compatibility
+- Requires separate package
+
+**ProTV:**
+- Feature-rich
+- Good UI
+- Requires separate package
+
+**VideoTXL:**
+- High performance
+- Modern features
+- Requires separate package
+
+### Configure Video Player
+
+1. Spawn your chosen DMX reader from VRSL Control Panel
+2. Select the video player component
+3. Set **Default URL** to your stream:
+   - YouTube: `https://youtu.be/[VIDEO_ID]`
+   - Twitch: `https://twitch.tv/[USERNAME]`
+   - RTMP: `rtmp://your-server/live/stream`
+4. Configure playback:
+   - **Auto Play**: Enabled
+   - **Loop**: Enabled (for testing)
+   - **Volume**: 0 (DMX data is silent)
+5. Set video resolution to 1920x1080
+
+<Tip>
+For testing, use a pre-recorded DMX video with loop enabled. This lets you test without running the full streaming pipeline.
+</Tip>
+
+## Optimizing Streaming Quality
+
+### Reduce Compression Artifacts
+
+**In OBS:**
+- Use highest bitrate your connection allows
+- Use hardware encoding (NVENC/QuickSync) over x264
+- Use "Quality" preset, not "Performance"
+- Disable look-ahead and psycho visual tuning
+- Keep keyframe interval at 2
+
+**In VRSL:**
+- Enable interpolation in CRT materials (compensates for artifacts)
+- Use maximum smoothing (0) on fixtures
+- Enable signal detection system for error recovery
+
+### Reduce Latency
+
+**Streaming:**
+- Use local RTMP server if possible
+- Use hardware encoding (lower processing delay)
+- Use wired network connection
+- Reduce keyframe interval (but not below 1)
+- Choose geographically close streaming server
+
+**In Unity:**
+- Position video screen near spawn point
+- Use efficient video player (TekOSC recommended)
+- Pre-load/pre-buffer when possible
+
+### Network Optimization
+
+**Upload:**
+- Reserve bandwidth for stream (QoS on router)
+- Use wired connection, not WiFi
+- Close bandwidth-heavy applications
+- Test your upload speed before events
+
+**Monitor Your Stream:**
+- Watch dropped frames in OBS
+- Monitor bitrate stability
+- Check network usage
+- Have fallback plan for connection issues
+
+## Testing Your Stream
+
+<Steps>
+
+### Test Stream Quality
+
+1. Start streaming to your destination
+2. In OBS, check **Stats** panel:
+   - **Dropped Frames**: Should be 0%
+   - **CPU Usage**: Should be under 70%
+   - **Render Lag**: Should be 0
+3. View stream on another device
+4. Check for compression artifacts on the grid
+5. Verify colors are accurate
+
+### Test in Unity
+
+1. Enter Play Mode
+2. Wait for video to start playing
+3. Send test DMX data from console
+4. Verify fixtures respond correctly
+5. Check response timing
+
+### Test in VRChat
+
+1. Build and upload world
+2. Enter world
+3. Wait for stream to load
+4. Test all fixtures and DMX channels
+5. Invite friends to test sync across multiple users
+
+</Steps>
+
+## Common Issues
+
+### High Latency
+
+**Causes:**
+- Distance to streaming server
+- Buffering in video player
+- Network congestion
+- Slow encoding preset
+
+**Solutions:**
+- Use local RTMP server
+- Use faster encoding preset
+- Reduce keyframe interval
+- Use wired connection
+- Choose closer server
+
+### Dropped Frames
+
+**Causes:**
+- Insufficient upload bandwidth
+- CPU/GPU overload
+- Network instability
+
+**Solutions:**
+- Reduce bitrate
+- Use hardware encoding
+- Close other applications
+- Check network quality
+- Reduce canvas resolution (last resort, may affect DMX)
+
+### Compression Artifacts
+
+**Causes:**
+- Bitrate too low
+- Aggressive encoding preset
+- Network packet loss
+
+**Solutions:**
+- Increase bitrate (minimum 6000 kbps)
+- Use "Quality" preset
+- Enable maximum smoothing in VRSL
+- Use hardware encoding
+
+### Stream Not Playing in World
+
+**Check:**
+- URL is correct and accessible
+- Video player is configured properly
+- Stream is actually live
+- Permissions in VRChat
+- Video player has correct permissions in world
+
+## Advanced Configuration
+
+### Multi-PC Streaming Setup
+
+For large events, separate streaming from DMX control:
+
+**PC 1 (DMX Control):**
+- Runs lighting software
+- Runs Artnet Grid Node
+- Outputs to capture card
+
+**PC 2 (Streaming):**
+- Receives capture card input
+- Runs OBS for streaming
+- Handles network upload
+
+**Advantages:**
+- No performance impact on DMX
+- Dedicated resources for streaming
+- Can use different network connections
+
+### Stream Backup System
+
+Create redundancy for critical events:
+
+1. **Primary Stream**: Live DMX via YouTube/Twitch
+2. **Backup Stream**: Pre-recorded DMX loop on second URL
+3. **Fallback**: AudioLink-only mode
+
+Use Udon to switch between sources if primary fails.
+
+### Quality Profiles
+
+Create OBS profiles for different situations:
+
+**Testing Profile:**
+- Lower bitrate (3000 kbps)
+- Faster preset
+- Local streaming
+
+**Performance Profile:**
+- Medium bitrate (6000 kbps)
+- Balanced preset  
+- Public streaming service
+
+**Quality Profile:**
+- High bitrate (12000+ kbps)
+- Quality preset
+- Local or reliable service
+
+## Best Practices
+
+<Tip>
+**For Live Events:**
+- Test stream setup 24 hours before event
+- Have backup pre-recorded DMX video ready
+- Monitor stream health during event
+- Use dedicated hardware for streaming
+- Have emergency fallback plan (AudioLink-only mode)
+- Run test events to verify full pipeline
+</Tip>
+
+**Reliability:**
+- Use wired connections everywhere possible
+- Have backup internet connection
+- Use stable, proven software versions
+- Document your entire setup
+- Train backup operator
+
+**Performance:**
+- Use hardware encoding (NVENC/QuickSync)
+- Keep OBS scenes simple
+- Close unnecessary applications
+- Monitor system resources
+- Use dedicated streaming PC for large events
+
+## Next Steps
+
+- Complete your [DMX Setup](/guides/dmx-setup)
+- Learn [Performance Optimization](/guides/performance-optimization)
+- Integrate [AudioLink](/guides/audiolink-setup) as backup
+- Create [Custom Fixtures](/guides/custom-fixtures)
+
+## Resources
+
+- [OBS Studio Documentation](https://obsproject.com/wiki/)
+- [VRSL Discord](https://vrsl.dev)
+- [nginx-rtmp](https://github.com/arut/nginx-rtmp-module)
+- [YouTube Live Documentation](https://support.google.com/youtube/answer/2474026)

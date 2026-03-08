@@ -1,0 +1,156 @@
+---
+title: "Shader System Overview"
+description: "Overview of the VR Stage Lighting shader architecture and rendering system"
+---
+
+## Introduction
+
+VR Stage Lighting uses a sophisticated shader system built on Unity's shader pipeline, supporting both the Built-in Render Pipeline and Universal Render Pipeline (URP). The shader system provides realistic stage lighting effects including volumetric rendering, projection mapping, and DMX/AudioLink control.
+
+## Shader Architecture
+
+The shader system is organized into several key categories:
+
+### Moving Light Shaders
+- **Standard Mover** - Versatile moving head spotlight with projection capabilities
+- **Wash Mover** - Wide-beam wash light for area illumination
+- **Basic Laser** - Laser beam effects
+
+Each moving light type includes three mesh components:
+- **Fixture Mesh** - Physical appearance of the light fixture
+- **Projection Mesh** - Light projection and GOBO patterns
+- **Volumetric Mesh** - Volumetric light cone rendering
+
+### Static Light Shaders
+- **Static Light Projection** - Fixed position projection lights
+- **Static Light Lens Flare** - Realistic lens flare effects for static lights
+
+### Control Variants
+
+All main shaders come in two control variants:
+
+1. **DMX Control** (`VRSL/...`) - Controlled via DMX512 protocol through render textures
+2. **AudioLink Control** (`VRSL/AudioLink/...`) - Driven by audio reactive AudioLink system
+
+## Rendering Pipeline
+
+### Render Order
+
+Shaders use specific queue orders for proper layering:
+- **Projection Meshes**: `Transparent+1`
+- **Volumetric Meshes**: `Transparent+2`
+- **Lens Flares**: `Transparent+200`
+
+### Stencil System
+
+All lighting shaders use stencil reference 142 to prevent rendering where depth lights are placed:
+
+```hlsl
+Stencil
+{
+    Ref 142
+    Comp NotEqual
+    Pass Keep
+}
+```
+
+## Key Features
+
+### GPU Instancing
+
+All shaders support GPU instancing for efficient rendering of multiple fixtures:
+
+```hlsl
+#pragma multi_compile_instancing
+#pragma instancing_options assumeuniformscaling
+```
+
+### Render Pipeline Support
+
+Shaders include dual SubShader blocks:
+- First SubShader: Universal Render Pipeline (URP)
+- Second SubShader: Built-in Render Pipeline
+
+### Shader Variants
+
+Common shader variants include:
+- `_ALPHATEST_ON` - Alpha to coverage rendering
+- `_MAGIC_NOISE_ON_HIGH` / `_MAGIC_NOISE_ON_MED` - Volumetric noise quality
+- `_USE_DEPTH_LIGHT` - Depth-based occlusion
+- `_POTATO_MODE_ON` - Performance mode
+- `_HQ_MODE` - High quality mode
+
+## Shared Functionality
+
+### Include Files
+
+Shaders use shared include files for common functionality:
+
+- **VRSL-Defines.cginc** - Property definitions and uniforms
+- **VRSL-DMXFunctions.cginc** - DMX grid sampling and control functions
+- **VRSL-AudioLink-Functions.cginc** - AudioLink integration
+- **VRSL-StandardLighting.cginc** - Lighting calculations
+
+### DMX Grid Sampling
+
+The system uses render textures for DMX control:
+- `_Udon_DMXGridRenderTexture` - Raw DMX values
+- `_Udon_DMXGridRenderTextureMovement` - Smoothed movement data
+- `_Udon_DMXGridStrobeOutput` - Strobe timing
+- `_Udon_DMXGridSpinTimer` - GOBO rotation timing
+
+## Performance Considerations
+
+### Quality Modes
+
+The shader system includes multiple quality levels:
+
+1. **High Quality Mode** (`_HQMode`)
+   - Enhanced volumetric sampling
+   - Higher resolution noise textures
+   - Best visual quality
+
+2. **Default Mode**
+   - Balanced performance and quality
+   - Standard noise sampling
+
+3. **Potato Mode** (`_PotatoMode`)
+   - Disabled noise sampling
+   - Reduced texture reads
+   - Maximum performance
+
+### Render Modes
+
+Shaders support multiple transparency modes:
+- **Transparent** - Standard alpha blending
+- **AlphaToCoverage** - MSAA-based transparency
+- **HQTransparent** - Enhanced transparency for volumetrics
+
+## Depth System
+
+The shader system uses Unity's depth texture for:
+- Soft particle effects (depth fade)
+- Mirror depth correction
+- Occlusion testing (lens flares)
+- Intersection highlighting
+
+### Mirror Support
+
+Built-in mirror depth correction for VRChat mirrors:
+
+```hlsl
+inline float4 CalculateFrustumCorrection()
+{
+    float x1 = -UNITY_MATRIX_P._31/(UNITY_MATRIX_P._11*UNITY_MATRIX_P._34);
+    float x2 = -UNITY_MATRIX_P._32/(UNITY_MATRIX_P._22*UNITY_MATRIX_P._34);
+    return float4(x1, x2, 0, 
+        UNITY_MATRIX_P._33/UNITY_MATRIX_P._34 + 
+        x1*UNITY_MATRIX_P._13 + x2*UNITY_MATRIX_P._23);
+}
+```
+
+## Next Steps
+
+- [Moving Light Shaders](/api/shaders/moving-lights) - Detailed properties for moving lights
+- [Static Light Shaders](/api/shaders/static-lights) - Static light shader reference
+- [Volumetric Rendering](/api/shaders/volumetric) - Volumetric lighting techniques

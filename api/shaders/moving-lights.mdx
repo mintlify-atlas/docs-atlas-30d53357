@@ -1,0 +1,351 @@
+---
+title: "Moving Light Shaders"
+description: "Shader properties and configuration for moving head stage lights"
+---
+
+## Overview
+
+Moving light shaders simulate professional moving head stage lights with pan/tilt control, GOBO projection, color mixing, and volumetric light cones. Available in Standard Mover, Wash Mover, and Laser variants.
+
+## Shader Paths
+
+### DMX Control
+- `VRSL/Standard Mover/Projection`
+- `VRSL/Standard Mover/Volumetric`
+- `VRSL/Standard Mover/Fixture`
+- `VRSL/Wash Mover/Projection`
+- `VRSL/Wash Mover/Volumetric`
+- `VRSL/Basic Laser/DMX`
+
+### AudioLink Control
+- `VRSL/AudioLink/Standard Mover/Projection`
+- `VRSL/AudioLink/Standard Mover/Volumetric`
+- `VRSL/AudioLink/Wash Mover/Projection`
+- `VRSL/AudioLink/Wash Mover/Volumetric`
+
+## Core Properties
+
+### DMX Configuration
+
+<ParamField path="_DMXChannel" type="int" default="0">
+  Starting DMX channel for the fixture (0-512). Each fixture uses 13 channels in standard mode.
+</ParamField>
+
+<ParamField path="_NineUniverseMode" type="bool" default="false">
+  Enable extended universe mode for addressing fixtures beyond 512 channels. Supports up to 9 DMX universes (4608 channels).
+</ParamField>
+
+<ParamField path="_EnableDMX" type="bool" default="false">
+  Enable DMX control via render texture input. When disabled, uses manual property control.
+</ParamField>
+
+<ParamField path="_EnableCompatibilityMode" type="bool" default="false">
+  Enable legacy DMX grid reading method for backward compatibility with older versions.
+</ParamField>
+
+<ParamField path="_EnableVerticalMode" type="bool" default="false">
+  Switch DMX grid reading from horizontal to vertical layout.
+</ParamField>
+
+### Movement Controls
+
+<ParamField path="_FixtureBaseRotationY" type="float" range="-540 to 540" default="0">
+  Pan offset in degrees. Adjusts the base pan rotation of the fixture.
+</ParamField>
+
+<ParamField path="_FixtureRotationX" type="float" range="-180 to 180" default="0">
+  Tilt offset in degrees. Adjusts the base tilt rotation of the fixture.
+</ParamField>
+
+<ParamField path="_MaxMinPanAngle" type="float" default="180">
+  Maximum pan angle range (-x to +x degrees). Typical values: 180°, 270°, 540°.
+</ParamField>
+
+<ParamField path="_MaxMinTiltAngle" type="float" default="180">
+  Maximum tilt angle range (-y to +y degrees). Typical values: 90°, 180°, 270°.
+</ParamField>
+
+<ParamField path="_PanInvert" type="bool" default="false">
+  Invert pan direction. Useful for fixtures mounted in different orientations.
+</ParamField>
+
+<ParamField path="_TiltInvert" type="bool" default="false">
+  Invert tilt direction.
+</ParamField>
+
+<ParamField path="_FixtureRotationOrigin" type="vector" default="(0, 0.014709, -1.02868, 0)">
+  Pivot point for pan/tilt rotation in object space. Should align with the fixture's physical rotation point.
+</ParamField>
+
+### Intensity and Color
+
+<ParamField path="_FinalIntensity" type="float" range="0 to 1" default="1">
+  Master intensity multiplier for the fixture. Affects all output.
+</ParamField>
+
+<ParamField path="_GlobalIntensity" type="float" range="0 to 1" default="1">
+  Global intensity control shared across all fixtures.
+</ParamField>
+
+<ParamField path="_GlobalIntensityBlend" type="float" range="0 to 1" default="1">
+  Blend factor between local and global intensity.
+</ParamField>
+
+<ParamField path="_UniversalIntensity" type="float" range="0 to 1" default="1">
+  Universal intensity multiplier applied to entire scene.
+</ParamField>
+
+<ParamField path="_Emission" type="color" default="(1,1,1,1)">
+  Light color tint (HDR). Multiplied with DMX color values.
+</ParamField>
+
+<ParamField path="_FixtureMaxIntensity" type="float" range="0 to 6" default="1">
+  Maximum light intensity output. Higher values increase bloom and brightness.
+</ParamField>
+
+<ParamField path="_Saturation" type="float" range="0 to 1" default="1">
+  Color saturation of the light output.
+</ParamField>
+
+<ParamField path="_SaturationLength" type="float" range="0 to 20" default="0.1">
+  Falloff distance for saturation effects.
+</ParamField>
+
+<ParamField path="_RedMultiplier" type="float" range="0 to 5" default="1">
+  Red channel intensity multiplier for color correction.
+</ParamField>
+
+<ParamField path="_GreenMultiplier" type="float" range="0 to 5" default="1">
+  Green channel intensity multiplier.
+</ParamField>
+
+<ParamField path="_BlueMultiplier" type="float" range="0 to 5" default="1">
+  Blue channel intensity multiplier.
+</ParamField>
+
+### Projection Properties
+
+<ParamField path="_ProjectionSelection" type="int" range="0 to 8" default="0">
+  Selected GOBO pattern index. 0 = no gobo, 1-8 = GOBO patterns.
+</ParamField>
+
+<ParamField path="_ProjectionMainTex" type="texture" default="white">
+  GOBO texture for projection pattern. Supports up to 8 different GOBO textures.
+</ParamField>
+
+<ParamField path="_ProjectionIntensity" type="float" range="0 to 20" default="0">
+  Intensity multiplier for projected GOBO pattern.
+</ParamField>
+
+<ParamField path="_ProjectionRotation" type="float" range="-180 to 180" default="0">
+  Static rotation angle of the projection in degrees.
+</ParamField>
+
+<ParamField path="_EnableSpin" type="bool" default="false">
+  Enable automatic GOBO rotation animation.
+</ParamField>
+
+<ParamField path="_SpinSpeed" type="float" range="0 to 10" default="0">
+  Speed of automatic GOBO rotation.
+</ParamField>
+
+<ParamField path="_ProjectionUVMod" type="float" range="0 to 2" default="0">
+  UV scale modifier for GOBO 1. Adjusts projection size.
+</ParamField>
+
+<ParamField path="_ProjectionUVMod2" type="float" range="0 to 2" default="0">
+  UV scale modifier for GOBO 2.
+</ParamField>
+
+<ParamField path="_ProjectionFade" type="float" range="0 to 10" default="0">
+  Edge fade for projection. Higher values create softer edges.
+</ParamField>
+
+<ParamField path="_ProjectionFadeCurve" type="float" range="0 to 10" default="1">
+  Harshness/curve of the projection edge fade.
+</ParamField>
+
+<ParamField path="_ProjectionDistanceFallOff" type="float" range="0.001 to 0.5" default="0.05">
+  Distance-based intensity falloff for projections.
+</ParamField>
+
+<ParamField path="_ProjectionRange" type="float" range="0 to 100" default="0">
+  Drawing range for projection. Scales the projection mesh.
+</ParamField>
+
+<ParamField path="_ProjectionCutoff" type="float" range="0 to 1" default="0.25">
+  Cutoff threshold for projection visibility.
+</ParamField>
+
+<ParamField path="_ProjectionShadowHarshness" type="float" range="0 to 1" default="0">
+  Harshness of projected shadows in the GOBO pattern.
+</ParamField>
+
+<ParamField path="_MinimumBeamRadius" type="float" range="0.001 to 1" default="1">
+  Minimum beam radius at the origin point.
+</ParamField>
+
+<ParamField path="_LegacyGoboRange" type="bool" default="false">
+  Use legacy GOBO indexing range for backward compatibility.
+</ParamField>
+
+### Cone Properties
+
+<ParamField path="_ConeWidth" type="float" range="0 to 5.5" default="0">
+  Width/spread of the light cone.
+</ParamField>
+
+<ParamField path="_ConeLength" type="float" range="1 to 10" default="1">
+  Length of the visible light cone.
+</ParamField>
+
+<ParamField path="_MaxConeLength" type="float" range="1 to 10" default="1">
+  Maximum cone length when using DMX control.
+</ParamField>
+
+<ParamField path="_ConeSync" type="float" range="0 to 1" default="0.2">
+  Synchronization factor between cone width and length.
+</ParamField>
+
+<ParamField path="_EnableExtraChannels" type="bool" default="false">
+  Enable DMX control of cone length via additional channel.
+</ParamField>
+
+### Strobe Settings
+
+<ParamField path="_EnableStrobe" type="bool" default="false">
+  Enable strobe effect support.
+</ParamField>
+
+<ParamField path="_StrobeFreq" type="float" range="0 to 25" default="1">
+  Strobe frequency in Hz when manually controlled.
+</ParamField>
+
+### Rendering Options
+
+<ParamField path="_RenderMode" type="enum" default="1">
+  Transparency rendering mode:
+  - `0`: HQTransparent (volumetric only)
+  - `1`: Transparent
+  - `2`: AlphaToCoverage
+</ParamField>
+
+<ParamField path="_BlendSrc" type="enum" default="2">
+  Source blend mode (Unity BlendMode enum).
+</ParamField>
+
+<ParamField path="_BlendDst" type="enum" default="1">
+  Destination blend mode.
+</ParamField>
+
+<ParamField path="_BlendOp" type="enum" default="0">
+  Blend operation (Unity BlendOp enum).
+</ParamField>
+
+<ParamField path="_ZWrite" type="bool" default="false">
+  Enable depth buffer writing.
+</ParamField>
+
+<ParamField path="_AlphaToCoverage" type="bool" default="false">
+  Enable alpha to coverage for MSAA transparency.
+</ParamField>
+
+<ParamField path="_ClippingThreshold" type="float" range="0 to 1" default="0.5">
+  Alpha clipping threshold for alpha to coverage mode.
+</ParamField>
+
+<ParamField path="_MultiSampleDepth" type="bool" default="true">
+  Enable multi-sample depth texture reading for better quality.
+</ParamField>
+
+### Advanced Grid Options
+
+<ParamField path="_UseRawGrid" type="bool" default="false">
+  Use raw unsmoothed DMX grid for intensity and color. Bypasses interpolation for instant response.
+</ParamField>
+
+## AudioLink Specific Properties
+
+<ParamField path="_EnableAudioLink" type="bool" default="false">
+  Enable AudioLink audio reactivity.
+</ParamField>
+
+<ParamField path="_Band" type="enum" default="0">
+  AudioLink frequency band:
+  - `0`: Bass
+  - `1`: Low Mids
+  - `2`: High Mids
+  - `3`: Treble
+</ParamField>
+
+<ParamField path="_BandMultiplier" type="float" range="1 to 15" default="1">
+  Intensity multiplier for the selected frequency band.
+</ParamField>
+
+<ParamField path="_Delay" type="float" default="0">
+  Time delay for AudioLink response.
+</ParamField>
+
+<ParamField path="_NumBands" type="float" default="4">
+  Number of frequency bands to sample.
+</ParamField>
+
+<ParamField path="_EnableColorChord" type="bool" default="false">
+  Enable ColorChord color tinting from AudioLink.
+</ParamField>
+
+<ParamField path="_EnableColorTextureSample" type="bool" default="false">
+  Enable sampling color from a texture instead of AudioLink.
+</ParamField>
+
+<ParamField path="_SamplingTexture" type="texture" default="white">
+  Texture to sample color from when color texture sampling is enabled.
+</ParamField>
+
+<ParamField path="_TextureColorSampleX" type="float" range="0 to 1" default="0.5">
+  X coordinate for color texture sampling.
+</ParamField>
+
+<ParamField path="_TextureColorSampleY" type="float" range="0 to 1" default="0.5">
+  Y coordinate for color texture sampling.
+</ParamField>
+
+<ParamField path="_EnableThemeColorSampling" type="bool" default="false">
+  Enable AudioLink theme color sampling.
+</ParamField>
+
+<ParamField path="_ThemeColorTarget" type="int" default="0">
+  Target theme color slot to sample from AudioLink.
+</ParamField>
+
+## Usage Examples
+
+### Basic Setup
+
+1. Assign the Projection shader to the projection mesh
+2. Assign the Volumetric shader to the volumetric cone mesh
+3. Set `_DMXChannel` to the starting channel (e.g., 0 for channel 1)
+4. Enable `_EnableDMX` if using DMX control
+5. Adjust `_FixtureMaxIntensity` to control brightness
+
+### GOBO Configuration
+
+1. Assign GOBO texture to `_ProjectionMainTex`
+2. Set `_ProjectionIntensity` to control brightness
+3. Adjust `_ProjectionUVMod` to scale the pattern
+4. Use `_ProjectionRotation` for static rotation
+5. Enable `_EnableSpin` for animated rotation
+
+### Performance Optimization
+
+For better performance on lower-end systems:
+- Set `_RenderMode` to `1` (Transparent)
+- Keep `_ProjectionIntensity` moderate
+- Reduce `_ConeLength` to minimize overdraw
+- Disable unnecessary features like `_EnableSpin`
+
+## See Also
+
+- [Volumetric Rendering](/api/shaders/volumetric) - Detailed volumetric properties
+- [Shader Overview](/api/shaders/overview) - System architecture
+- [Static Lights](/api/shaders/static-lights) - Static light shaders

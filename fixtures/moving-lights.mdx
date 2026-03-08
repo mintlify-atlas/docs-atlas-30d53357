@@ -1,0 +1,269 @@
+---
+title: 'Moving Lights'
+description: 'Spotlight and washlight fixtures with pan and tilt control'
+---
+
+Moving lights (movers) are dynamic fixtures with pan and tilt capabilities, allowing for precise beam positioning and movement. VRSL provides two types of moving lights: Spotlights and Washlights.
+
+## Fixture Types
+
+### Spotlight
+Focused beam fixture with gobo projection support.
+
+**Prefabs:**
+- DMX Horizontal: `VRSL-DMX-Mover-Spotlight-H-13CH.prefab`
+- DMX Vertical: `VRSL-DMX-Mover-Spotlight-V-13CH.prefab`
+- DMX Legacy: `VRSL-DMX-Mover-Spotlight-L-13CH.prefab`
+- AudioLink: `VRSL-AudioLink-Mover-Spotlight.prefab`
+
+**Features:**
+- Sharp, focused beam output
+- 8 gobo/projection selections
+- Volumetric cone rendering
+- Projection surface rendering
+- Fixture mesh visualization
+
+### Washlight
+Wide-beam fixture for area coverage.
+
+**Prefabs:**
+- DMX Horizontal: `VRSL-DMX-Mover-WashLight-H-13CH.prefab`
+- DMX Vertical: `VRSL-DMX-Mover-WashLight-V-13CH.prefab`
+- DMX Legacy: `VRSL-DMX-Mover-WashLight-L-13CH.prefab`
+- AudioLink: `VRSL-AudioLink-Mover-Washlight.prefab`
+
+**Features:**
+- Wide, soft beam output
+- No gobo projections
+- Adjustable beam width
+- Area coverage optimized
+
+## DMX Channel Layout (13 Channels)
+
+Both spotlight and washlight fixtures use the standard 13-channel DMX layout:
+
+| Channel | Function | Range | Description |
+|---------|----------|-------|-------------|
+| 1 | Pan (Coarse) | 0-255 | Horizontal rotation (0-360°) |
+| 2 | Pan (Fine) | 0-255 | Fine pan adjustment |
+| 3 | Tilt (Coarse) | 0-255 | Vertical rotation (0-360°) |
+| 4 | Tilt (Fine) | 0-255 | Fine tilt adjustment |
+| 5 | Red | 0-255 | Red color intensity |
+| 6 | Green | 0-255 | Green color intensity |
+| 7 | Blue | 0-255 | Blue color intensity |
+| 8 | Intensity | 0-255 | Master dimmer |
+| 9 | Strobe | 0-255 | Strobe rate (0=off, 1-255=speed) |
+| 10 | Gobo | 0-255 | Gobo selection (Spotlight only) |
+| 11 | Gobo Spin | 0-255 | Gobo rotation speed and direction |
+| 12 | Reserved | 0-255 | Future use |
+| 13 | Reserved | 0-255 | Future use |
+
+### Pan/Tilt Behavior
+
+**Channels 1-2 (Pan):**
+- Controls horizontal rotation
+- Coarse channel provides main positioning
+- Fine channel provides 16-bit precision
+- Default range: 0° to 360°
+- Configurable via `maxMinPan` property
+
+**Channels 3-4 (Tilt):**
+- Controls vertical rotation  
+- Coarse channel provides main positioning
+- Fine channel provides 16-bit precision
+- Default range: -180° to 180°
+- Configurable via `maxMinTilt` property
+
+### Color Mixing (Channels 5-7)
+
+RGB color mixing with HDR support:
+- Full 8-bit resolution per channel
+- Hardware-accelerated color calculation
+- Color multiplier support for brightness boost
+- Respects global color tint setting
+
+### Gobo Selection (Channel 10 - Spotlight Only)
+
+Spotlights support 8 gobo/projection selections:
+
+| DMX Value | Gobo | Description |
+|-----------|------|-------------|
+| 0-31 | 1 | Open/No gobo |
+| 32-63 | 2 | Gobo 2 |
+| 64-95 | 3 | Gobo 3 |
+| 96-127 | 4 | Gobo 4 |
+| 128-159 | 5 | Gobo 5 |
+| 160-191 | 6 | Gobo 6 |
+| 192-223 | 7 | Gobo 7 |
+| 224-255 | 8 | Gobo 8 |
+
+Gobo textures can be customized by replacing the projection textures in the material.
+
+### Gobo Spin (Channel 11)
+
+Controls gobo rotation:
+- 0-127: Counterclockwise rotation (slow to fast)
+- 128: Stop
+- 129-255: Clockwise rotation (slow to fast)
+
+## Inspector Properties
+
+### DMX Settings
+
+```csharp
+enableDMXChannels     // Enable/disable DMX control
+dmxChannel            // Starting DMX channel (1-512)
+dmxUniverse           // DMX universe (1-9)
+nineUniverseMode      // Extended universe mode
+useLegacySectorMode   // Legacy sector addressing
+```
+
+### Movement Settings
+
+```csharp
+invertPan             // Invert pan direction
+invertTilt            // Invert tilt direction
+isUpsideDown          // Fixture mounting orientation
+panOffsetBlueGreen    // Pan offset in degrees (0-360)
+tiltOffsetBlue        // Tilt offset in degrees (0-360)
+maxMinPan             // Maximum pan range (+/- degrees)
+maxMinTilt            // Maximum tilt range (+/- degrees)
+```
+
+### Fixture Settings
+
+```csharp
+enableAutoSpin        // Enable gobo auto-spin
+enableStrobe          // Enable strobe effects
+selectGOBO            // Manual gobo selection (1-8)
+coneWidth             // Beam width (0-5.5)
+coneLength            // Beam length (0.5-10)
+maxConeLength         // Volumetric mesh length (0.275-10)
+```
+
+### Intensity Settings
+
+```csharp
+globalIntensity               // Master brightness (0-1)
+finalIntensity                // Maximum brightness limit (0-1)
+finalIntensityComponentMode   // Enable per-component control
+finalIntensityVolumetric      // Volumetric brightness (0-1)
+finalIntensityProjection      // Projection brightness (0-1)
+finalIntensityFixture         // Fixture mesh brightness (0-1)
+```
+
+### Color Settings
+
+```csharp
+lightColorTint        // HDR color tint (default: white)
+```
+
+## Configuration Examples
+
+### Basic DMX Setup
+
+1. Place mover prefab in scene
+2. Configure DMX settings:
+   - DMX Channel: 1
+   - DMX Universe: 1
+   - Enable DMX Channels: ✓
+3. Adjust cone settings:
+   - Cone Width: 2.5
+   - Cone Length: 8.5
+   - Max Cone Length: 1.0
+4. Add VRSL DMX Grid Reader to scene
+
+### Inverted/Upside Down Mounting
+
+For fixtures mounted upside down:
+```csharp
+isUpsideDown = true
+invertPan = true    // May need adjustment
+invertTilt = true   // May need adjustment
+tiltOffsetBlue = 270 // Compensate for mounting
+```
+
+### Limited Range Movement
+
+Restrict pan/tilt range:
+```csharp
+maxMinPan = 90    // +/- 90° pan range (180° total)
+maxMinTilt = 45   // +/- 45° tilt range (90° total)
+```
+
+### Performance Optimization
+
+For better performance with many fixtures:
+```csharp
+finalIntensityComponentMode = true
+finalIntensityVolumetric = 0.5    // Reduce volumetric brightness
+finalIntensityProjection = 1.0    // Keep projection full
+finalIntensityFixture = 0.7       // Reduce fixture mesh
+enableStrobe = false              // Disable if not needed
+```
+
+## Shaders
+
+Moving lights use multiple shader components:
+
+### Spotlight Shaders
+- `VRSL-StandardMover-FixtureMesh.shader` - Fixture body
+- `VRSL-StandardMover-ProjectionMesh.shader` - Light projection
+- `VRSL-StandardMover-VolumetricMesh.shader` - Volumetric cone
+
+### Washlight Shaders
+- `VRSL-WashMover-FixtureMesh.shader` - Fixture body
+- `VRSL-WashMover-ProjectionMesh.shader` - Light projection
+
+**Location:** `Runtime/Shaders/MovingLights/`
+
+## Use Cases
+
+### Spotlights
+- **Stage Key Lighting** - Focused illumination on performers
+- **Gobo Projections** - Pattern and texture projection
+- **Spotlight Effects** - Dramatic beam effects
+- **Follow Spots** - Tracking moving subjects (via Udon)
+
+### Washlights
+- **Area Lighting** - Wide coverage for stages and sets
+- **Color Washes** - Full-stage color changes
+- **Uplighting** - Wall and backdrop illumination
+- **Ambient Lighting** - General scene lighting
+
+## Troubleshooting
+
+### Fixture Not Moving
+- Verify DMX channel assignment matches control software
+- Check that pan/tilt channels are receiving data
+- Ensure `enableDMXChannels` is enabled
+- Verify VRSL Grid Reader is present and configured
+
+### Erratic Movement
+- Increase smoothing (in Grid Reader settings)
+- Check for stream compression artifacts
+- Verify channel assignments don't overlap
+- Test with slower movement commands
+
+### No Light Output
+- Check intensity channel (Channel 8) is above 0
+- Verify RGB channels (5-7) have values
+- Ensure `globalIntensity` and `finalIntensity` > 0
+- Check that fixture isn't obscured by geometry
+
+### Gobo Not Appearing
+- Spotlight only - washlights don't support gobos
+- Verify Channel 10 is within correct range
+- Check `selectGOBO` property in Udon mode
+- Ensure gobo textures are assigned in material
+
+## AudioLink Integration
+
+AudioLink variants support:
+- Band selection for intensity modulation
+- Band multiplier for sensitivity adjustment
+- Color chord sampling for auto-coloring
+- Theme color integration
+- Delay offset for timing effects
+
+See [AudioLink Setup](/guides/audiolink-setup) for configuration details.

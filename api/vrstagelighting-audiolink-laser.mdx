@@ -1,0 +1,235 @@
+---
+title: VRStageLighting_AudioLink_Laser
+description: AudioLink-reactive laser cone fixture script
+---
+
+## Overview
+
+The `VRStageLighting_AudioLink_Laser` class provides AudioLink integration specifically for laser cone effects in VRSL. It creates animated laser beam patterns that react to audio, with extensive control over beam count, thickness, rotation, and scrolling effects.
+
+This script is designed for creating dynamic laser show effects that synchronize with music.
+
+**Namespace:** `VRSL`  
+**Inherits from:** `UdonSharpBehaviour` (in VRChat) or `MonoBehaviour` (in Unity)
+
+## Audio Link Settings
+
+<ParamField path="enableAudioLink" type="bool" default="false">
+  Enable or disable Audio Link Reaction for this fixture.
+</ParamField>
+
+<ParamField path="band" type="AudioLinkBandState" default="Bass">
+  The frequency band of the spectrum to react to. Options: `Bass`, `Low_Mids`, `High_Mids`, `Treble`
+</ParamField>
+
+<ParamField path="delay" type="int" default="0" range="0-31">
+  The level of delay to add to the reaction.
+</ParamField>
+
+<ParamField path="bandMultiplier" type="float" default="1.0" range="1.0-15.0">
+  Multiplier for the sensitivity of the reaction.
+</ParamField>
+
+<ParamField path="enableColorChord" type="bool" default="false">
+  Enable Color Chord tinting of the light emission.
+</ParamField>
+
+## General Settings
+
+<ParamField path="globalIntensity" type="float" default="1.0" range="0-1">
+  Sets the overall intensity of the shader. Good for animating or scripting effects related to intensity. Its max value is controlled by Final Intensity.
+</ParamField>
+
+<ParamField path="finalIntensity" type="float" default="1.0" range="0-1">
+  Sets the maximum brightness value of Global Intensity. Good for personalized settings of the max brightness of the shader by other users via UI.
+</ParamField>
+
+<ParamField path="lightColorTint" type="Color" default="White * 2.0">
+  The main color of the light.
+</ParamField>
+
+## Color Sampling
+
+<ParamField path="enableColorTextureSampling" type="bool" default="false">
+  Check this box if you wish to sample a separate texture for the color. The color will be influenced by the intensity of the original emission color. The texture is set in the shader itself.
+</ParamField>
+
+<ParamField path="traditionalColorTextureSampling" type="bool" default="false">
+  Check this box if you wish to use traditional color sampling instead of white to black conversion.
+</ParamField>
+
+<ParamField path="textureSamplingCoordinates" type="Vector2" default="(0.5, 0.5)">
+  The UV coordinates to sample the color from on the texture.
+</ParamField>
+
+<ParamField path="enableThemeColorSampling" type="bool" default="false">
+  Check this box if you wish to enable AudioLink Theme colors.
+</ParamField>
+
+<ParamField path="themeColorTarget" type="int" default="1" range="1-4">
+  Theme Color to Sample from.
+</ParamField>
+
+## Laser Cone Settings
+
+<ParamField path="coneWidth" type="float" default="2.5" range="-3.75 to 20.0">
+  Controls the radius of the laser cone.
+</ParamField>
+
+<ParamField path="coneLength" type="float" default="8.5" range="-0.5 to 5.0">
+  Controls the length of the laser cone.
+</ParamField>
+
+<ParamField path="coneFlatness" type="float" default="0.0" range="0.0-1.999">
+  Controls how flat or round the cone is. 0 = circular, higher values = flatter.
+</ParamField>
+
+## Laser Rotation Settings
+
+<ParamField path="coneXRotation" type="float" default="0.0" range="-90 to 90">
+  X rotation offset for cone in degrees.
+</ParamField>
+
+<ParamField path="coneYRotation" type="float" default="0.0" range="-90 to 90">
+  Y rotation offset for cone in degrees.
+</ParamField>
+
+<ParamField path="coneZRotation" type="float" default="0.0" range="-90 to 90">
+  Z rotation offset for cone in degrees.
+</ParamField>
+
+## Laser Beam Settings
+
+<ParamField path="laserCount" type="int" default="14" range="4-68">
+  Number of laser beams in the cone. Higher values create denser laser patterns.
+</ParamField>
+
+<ParamField path="laserThickness" type="float" default="0.125" range="0.003-0.25">
+  Controls how thick/thin the lasers are. Lower values create thinner, more precise beams.
+</ParamField>
+
+<ParamField path="laserScroll" type="float" default="0.0" range="-1.0 to 1.0">
+  Controls the speed of laser scroll animation. Negative values scroll left, positive values scroll right, 0 means no scroll.
+</ParamField>
+
+## Mesh Settings
+
+<ParamField path="objRenderers" type="MeshRenderer[]" required>
+  The meshes used to make up the light. You need at least 1 mesh in this group for the script to work properly. Supports up to 5 mesh renderers.
+</ParamField>
+
+## Public Methods
+
+### _UpdateInstancedProperties()
+
+Updates all material property blocks with current fixture settings including all laser parameters.
+
+```csharp
+public void _UpdateInstancedProperties()
+```
+
+### _UpdateInstancedPropertiesSansAudioLink()
+
+Updates material property blocks without AudioLink functionality enabled.
+
+```csharp
+public void _UpdateInstancedPropertiesSansAudioLink()
+```
+
+### _SetProps()
+
+Initializes the MaterialPropertyBlock for this fixture.
+
+```csharp
+public void _SetProps()
+```
+
+## Properties (for Udon Scripting)
+
+All public fields have corresponding properties for safe access from Udon scripts:
+
+- `EnableAudioLink` - Get/Set AudioLink enabled state
+- `ColorChord` - Get/Set color chord enabled
+- `Band` - Get/Set the frequency band
+- `Delay` - Get/Set the reaction delay
+- `BandMultiplier` - Get/Set the band multiplier
+- `LightColorTint` - Get/Set the light color
+- `ConeWidth` - Get/Set the cone width
+- `ConeLength` - Get/Set the cone length
+- `GlobalIntensity` - Get/Set the global intensity
+- `FinalIntensity` - Get/Set the final intensity
+- `ConeFlatness` - Get/Set the cone flatness
+- `ConeXRotation` - Get/Set X rotation
+- `ConeYRotation` - Get/Set Y rotation
+- `ConeZRotation` - Get/Set Z rotation
+- `LaserCount` - Get/Set the number of lasers
+- `LaserThickness` - Get/Set laser thickness
+- `LaserScroll` - Get/Set laser scroll speed
+- `ColorTextureSampling` - Get/Set texture sampling enabled
+- `TraditionalColorTextureSampling` - Get/Set traditional sampling mode
+- `TextureSamplingCoordinates` - Get/Set texture sampling coordinates
+- `ThemeColorSampling` - Get/Set theme color sampling enabled
+- `ThemeColorTarget` - Get/Set theme color target
+
+## Usage Example
+
+```csharp
+// Example: Setting up an AudioLink laser effect
+VRStageLighting_AudioLink_Laser laser = GetComponent<VRStageLighting_AudioLink_Laser>();
+
+// Enable AudioLink and configure it to react to treble
+laser.EnableAudioLink = true;
+laser.Band = AudioLinkBandState.Treble;
+laser.BandMultiplier = 3.0f;
+
+// Configure laser appearance
+laser.LaserCount = 24;
+laser.LaserThickness = 0.05f;
+laser.LaserScroll = 0.5f; // Scroll to the right
+
+// Set cone shape
+laser.ConeWidth = 5.0f;
+laser.ConeLength = 3.0f;
+laser.ConeFlatness = 0.5f;
+
+// Add some rotation
+laser.ConeYRotation = 15.0f;
+
+// Enable color chord
+laser.ColorChord = true;
+
+// Apply changes
+laser._UpdateInstancedProperties();
+```
+
+## Creating Dynamic Laser Shows
+
+For more dynamic effects, you can animate properties over time:
+
+```csharp
+// Example: Rotating laser cone effect
+float rotationSpeed = 30.0f; // degrees per second
+laser.ConeYRotation += rotationSpeed * Time.deltaTime;
+laser._UpdateInstancedProperties();
+
+// Example: Pulsing laser count based on audio
+if (laser.EnableAudioLink)
+{
+    // Laser count will react to audio automatically
+    // But you can also script additional effects
+    laser.LaserScroll = Mathf.Sin(Time.time) * 0.5f;
+    laser._UpdateInstancedProperties();
+}
+```
+
+## Performance Considerations
+
+- Higher `laserCount` values increase draw calls and performance cost
+- Very thin lasers (`laserThickness` < 0.01) may have aliasing issues
+- Combining high laser counts with fast scrolling can be performance intensive
+
+## Related Components
+
+- [VRStageLighting_AudioLink_Static](/api/vrstagelighting-audiolink-static) - AudioLink-controlled standard fixtures
+- [VRStageLighting_DMX_Static](/api/vrstagelighting-dmx-static) - DMX-controlled fixtures
+- [VRSL_LocalUIControlPanel](/api/vrsl-localuicontrolpanel) - Local UI control panel for VRSL

@@ -1,0 +1,431 @@
+---
+title: "Volumetric Rendering"
+description: "Volumetric light cone rendering techniques and properties"
+---
+
+## Overview
+
+Volumetric shaders create visible light beams and cones by rendering transparent meshes with sophisticated noise and gradient effects. These shaders are the most computationally intensive part of the VR Stage Lighting system and include multiple quality modes for performance optimization.
+
+## Shader Paths
+
+### DMX Control
+- `VRSL/Standard Mover/Volumetric`
+- `VRSL/Wash Mover/Volumetric`
+
+### AudioLink Control
+- `VRSL/AudioLink/Standard Mover/Volumetric`
+- `VRSL/AudioLink/Wash Mover/Volumetric`
+
+## Core Volumetric Properties
+
+### Quality Modes
+
+<ParamField path="_HQMode" type="bool" default="false">
+  Enable high quality volumetric mode (experimental). Uses `_NoiseTexHigh` instead of `_NoiseTex` for better visual quality.
+</ParamField>
+
+<ParamField path="_PotatoMode" type="bool" default="false">
+  Performance mode that disables noise sampling and extra texture reads. Significant performance boost at the cost of visual quality.
+</ParamField>
+
+<ParamField path="_UseDepthLight" type="bool" default="true">
+  Requires depth light to function. When disabled, volumetric will render without depth fade.
+</ParamField>
+
+### Textures
+
+<ParamField path="_LightMainTex" type="texture" default="white">
+  Main light texture for the volumetric cone. Typically a radial gradient.
+</ParamField>
+
+<ParamField path="_NoiseTex" type="texture" default="white">
+  Standard quality noise texture for volumetric distortion.
+</ParamField>
+
+<ParamField path="_NoiseTexHigh" type="texture" default="white">
+  High quality noise texture used when `_HQMode` is enabled.
+</ParamField>
+
+### Noise Configuration
+
+<ParamField path="_MAGIC_NOISE_ON_HIGH" type="bool" default="true">
+  Enable high quality magic noise effect.
+</ParamField>
+
+<ParamField path="_MAGIC_NOISE_ON_MED" type="bool" default="true">
+  Enable medium quality magic noise effect.
+</ParamField>
+
+<ParamField path="_2D_NOISE_ON" type="bool" default="true">
+  Enable 2D noise texture sampling.
+</ParamField>
+
+<ParamField path="_NoisePower" type="float" range="0 to 1" default="1">
+  Base noise strength/intensity.
+</ParamField>
+
+<ParamField path="_NoiseSeed" type="float" default="0">
+  Random seed value for noise variation.
+</ParamField>
+
+### Magic Noise Settings
+
+Magic noise creates dynamic, animated 3D noise patterns. Three quality presets are available:
+
+#### High Quality Mode
+
+<ParamField path="_Noise2Stretch" type="float" range="-10 to 10" default="1">
+  Outside magic noise scale (high quality).
+</ParamField>
+
+<ParamField path="_Noise2StretchInside" type="float" range="-10 to 10" default="1">
+  Inside magic noise scale (high quality).
+</ParamField>
+
+<ParamField path="_Noise2X" type="float" range="-10 to 10" default="1">
+  Magic noise X axis scroll speed (high quality).
+</ParamField>
+
+<ParamField path="_Noise2Y" type="float" range="-10 to 10" default="1">
+  Magic noise Y axis scroll speed (high quality).
+</ParamField>
+
+<ParamField path="_Noise2Z" type="float" range="-10 to 10" default="1">
+  Magic noise Z axis scroll speed (high quality).
+</ParamField>
+
+<ParamField path="_Noise2Power" type="float" range="0 to 1" default="1">
+  Magic noise strength (high quality).
+</ParamField>
+
+#### Default Mode
+
+<ParamField path="_Noise2StretchDefault" type="float" range="-10 to 10" default="1">
+  Outside magic noise scale (default quality).
+</ParamField>
+
+<ParamField path="_Noise2StretchInsideDefault" type="float" range="-10 to 10" default="1">
+  Inside magic noise scale (default quality).
+</ParamField>
+
+<ParamField path="_Noise2XDefault" type="float" range="-10 to 10" default="1">
+  Magic noise X scroll (default quality).
+</ParamField>
+
+<ParamField path="_Noise2YDefault" type="float" range="-10 to 10" default="1">
+  Magic noise Y scroll (default quality).
+</ParamField>
+
+<ParamField path="_Noise2ZDefault" type="float" range="-10 to 10" default="1">
+  Magic noise Z scroll (default quality).
+</ParamField>
+
+<ParamField path="_Noise2PowerDefault" type="float" range="0 to 1" default="1">
+  Magic noise strength (default quality).
+</ParamField>
+
+#### Potato Mode
+
+<ParamField path="_Noise2StretchPotato" type="float" range="-10 to 10" default="1">
+  Outside magic noise scale (potato quality - typically unused).
+</ParamField>
+
+<ParamField path="_Noise2StretchInsidePotato" type="float" range="-10 to 10" default="1">
+  Inside magic noise scale (potato quality - typically unused).
+</ParamField>
+
+<ParamField path="_Noise2XPotato" type="float" range="-10 to 10" default="1">
+  Magic noise X scroll (potato quality).
+</ParamField>
+
+<ParamField path="_Noise2YPotato" type="float" range="-10 to 10" default="1">
+  Magic noise Y scroll (potato quality).
+</ParamField>
+
+<ParamField path="_Noise2ZPotato" type="float" range="-10 to 10" default="1">
+  Magic noise Z scroll (potato quality).
+</ParamField>
+
+<ParamField path="_Noise2PowerPotato" type="float" range="0 to 1" default="1">
+  Magic noise strength (potato quality).
+</ParamField>
+
+### Intensity and Fade
+
+<ParamField path="_FixtureMaxIntensity" type="float" range="0 to 5" default="1">
+  Maximum cone intensity. Higher values create brighter, more visible volumetric beams.
+</ParamField>
+
+<ParamField path="_FadeStrength" type="float" range="0.00001 to 20" default="1">
+  Edge fade strength. Controls how sharply the cone edges fade out.
+</ParamField>
+
+<ParamField path="_InnerFadeStrength" type="float" range="0.00001 to 10" default="0">
+  Inner fade strength. Creates a hollow cone effect when increased.
+</ParamField>
+
+<ParamField path="_InnerIntensityCurve" type="float" range="0.00001 to 20" default="1">
+  Curve for inner intensity falloff.
+</ParamField>
+
+<ParamField path="_DistFade" type="float" range="0 to 1" default="0.1">
+  Distance-based fade. Cone fades at distance.
+</ParamField>
+
+<ParamField path="_FadeAmt" type="float" range="0 to 100" default="0.1">
+  Depth blending amount. Controls soft particle intersection with geometry.
+</ParamField>
+
+### Blinding Effect
+
+<ParamField path="_BlindingStrength" type="float" range="0 to 1" default="1">
+  Strength of the blinding/bloom effect when looking into the light.
+</ParamField>
+
+<ParamField path="_BlindingAngleMod" type="float" range="0 to 1" default="1">
+  Angle modifier for blinding effect. Adjusts viewing angle sensitivity.
+</ParamField>
+
+### Gradient Controls
+
+<ParamField path="_GradientMod" type="float" range="1 to 4" default="2.25">
+  Gradient modifier for solid beams (no GOBO).
+</ParamField>
+
+<ParamField path="_GradientModGOBO" type="float" range="1 to 4" default="2.25">
+  Gradient modifier when GOBO is active.
+</ParamField>
+
+### GOBO Beam Splitting
+
+Creates stripe effects in the volumetric cone for different GOBO patterns:
+
+<ParamField path="_GoboBeamSplitEnable" type="bool" default="false">
+  Enable beam splitting for GOBOs 2-8.
+</ParamField>
+
+<ParamField path="_StripeSplit" type="float" range="0 to 30" default="0">
+  Stripe split frequency for GOBO 2.
+</ParamField>
+
+<ParamField path="_StripeSplitStrength" type="float" range="0 to 1" default="0">
+  Stripe split intensity for GOBO 2.
+</ParamField>
+
+<ParamField path="_StripeSplit2" type="float" range="0 to 30" default="0">
+  Stripe split frequency for GOBO 3.
+</ParamField>
+
+<ParamField path="_StripeSplitStrength2" type="float" range="0 to 1" default="0">
+  Stripe split intensity for GOBO 3.
+</ParamField>
+
+<ParamField path="_StripeSplit3" type="float" range="0 to 30" default="0">
+  Stripe split frequency for GOBO 4.
+</ParamField>
+
+<ParamField path="_StripeSplitStrength3" type="float" range="0 to 1" default="0">
+  Stripe split intensity for GOBO 4.
+</ParamField>
+
+<ParamField path="_StripeSplit4" type="float" range="0 to 30" default="0">
+  Stripe split frequency for GOBO 5.
+</ParamField>
+
+<ParamField path="_StripeSplitStrength4" type="float" range="0 to 1" default="0">
+  Stripe split intensity for GOBO 5.
+</ParamField>
+
+<ParamField path="_StripeSplit5" type="float" range="0 to 30" default="0">
+  Stripe split frequency for GOBO 6.
+</ParamField>
+
+<ParamField path="_StripeSplitStrength5" type="float" range="0 to 1" default="0">
+  Stripe split intensity for GOBO 6.
+</ParamField>
+
+<ParamField path="_StripeSplit6" type="float" range="0 to 30" default="0">
+  Stripe split frequency for GOBO 7.
+</ParamField>
+
+<ParamField path="_StripeSplitStrength6" type="float" range="0 to 1" default="0">
+  Stripe split intensity for GOBO 7.
+</ParamField>
+
+<ParamField path="_StripeSplit7" type="float" range="0 to 30" default="0">
+  Stripe split frequency for GOBO 8.
+</ParamField>
+
+<ParamField path="_StripeSplitStrength7" type="float" range="0 to 1" default="0">
+  Stripe split intensity for GOBO 8.
+</ParamField>
+
+### Animation
+
+<ParamField path="_PulseSpeed" type="float" range="0 to 2" default="0">
+  Speed of intensity pulse animation.
+</ParamField>
+
+## Rendering Properties
+
+<ParamField path="_RenderMode" type="enum" default="1">
+  Volumetric rendering mode:
+  - `0`: HQTransparent - Best quality, most expensive
+  - `1`: Transparent - Standard transparency
+  - `2`: AlphaToCoverage - MSAA-based transparency
+</ParamField>
+
+<ParamField path="_BlendDst" type="enum" default="1">
+  Destination blend mode. Typically set to One for additive blending.
+</ParamField>
+
+<ParamField path="_BlendOp" type="enum" default="0">
+  Blend operation.
+</ParamField>
+
+<ParamField path="_ZWrite" type="bool" default="false">
+  Depth buffer writing. Always false for volumetrics.
+</ParamField>
+
+<ParamField path="_AlphaToCoverage" type="bool" default="false">
+  Enable alpha to coverage mode.
+</ParamField>
+
+## Performance Optimization
+
+### Quality Levels
+
+**High Quality** - Best visuals, lowest performance:
+```
+_HQMode = true
+_PotatoMode = false
+_MAGIC_NOISE_ON_HIGH = true
+_MAGIC_NOISE_ON_MED = true
+_2D_NOISE_ON = true
+```
+
+**Standard Quality** - Balanced:
+```
+_HQMode = false
+_PotatoMode = false
+_MAGIC_NOISE_ON_HIGH = false
+_MAGIC_NOISE_ON_MED = true
+_2D_NOISE_ON = true
+```
+
+**Performance Mode** - Best performance:
+```
+_HQMode = false
+_PotatoMode = true
+_MAGIC_NOISE_ON_HIGH = false
+_MAGIC_NOISE_ON_MED = false
+_2D_NOISE_ON = false
+```
+
+### Shader Variants
+
+The volumetric shader compiles multiple variants:
+- `_MAGIC_NOISE_ON_HIGH` - High quality noise
+- `_MAGIC_NOISE_ON_MED` - Medium quality noise
+- `_USE_DEPTH_LIGHT` - Depth-based effects
+- `_POTATO_MODE_ON` - Performance mode
+- `_HQ_MODE` - High quality mode
+- `_2D_NOISE_ON` - 2D noise sampling
+- `_ALPHATEST_ON` - Alpha testing
+
+Total possible combinations: 128 variants
+
+### Optimization Tips
+
+1. **Reduce Cone Length**: Shorter cones have less overdraw
+   - Use `_ConeLength` and `_MaxConeLength` conservatively
+
+2. **Simplify Noise**: Disable unused noise features
+   - Turn off `_MAGIC_NOISE_ON_HIGH` if not needed
+   - Use `_PotatoMode` on low-end hardware
+
+3. **Limit Fixture Count**: Volumetrics are expensive
+   - Consider using fewer fixtures with higher intensity
+   - Disable volumetrics for background/ambient lights
+
+4. **Adjust Fade Settings**: Reduce visibility distance
+   - Lower `_DistFade` for shorter render distance
+   - Increase `_FadeStrength` for sharper edges (less translucency layers)
+
+5. **Use Lower Resolution**: If using render textures
+   - Render volumetrics to lower resolution RT
+   - Upscale for final composite
+
+## Technical Details
+
+### Vertex Shader Calculations
+
+The vertex shader pre-calculates:
+- Blinding effect based on view angle
+- Camera angle and fade
+- Stripe/split information
+- Cone width
+- World direction for depth correction
+- Intensity, strobe, GOBO selection, and spin speed
+- RGB color values
+
+### Fragment Shader Operations
+
+The fragment shader performs:
+- Multi-layer noise sampling (2D + 3D magic noise)
+- Depth texture reading for soft particles
+- UV-based gradient calculations
+- GOBO stripe splitting
+- Edge fade calculations
+- Color blending and saturation
+- Mirror depth correction
+
+### Performance Characteristics
+
+**Vertex Shader**: Lightweight
+- Simple position transforms
+- Minimal branching
+- Instanced property access
+
+**Fragment Shader**: Heavy
+- Up to 3 texture samples per pixel (in HQ mode):
+  - `_LightMainTex`
+  - `_NoiseTex` or `_NoiseTexHigh`
+  - `_CameraDepthTexture`
+- Complex noise calculations
+- Distance-based fade calculations
+- High overdraw on large cones
+
+### Depth Fade Implementation
+
+Soft particle intersection uses depth comparison:
+
+```hlsl
+float sceneZ = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(
+    _CameraDepthTexture, UNITY_PROJ_COORD(i.screenPos)));
+float partZ = i.screenPos.z;
+float fade = saturate((sceneZ - partZ) / _FadeAmt);
+```
+
+This creates smooth transitions where volumetric cones intersect geometry.
+
+## AudioLink Specific
+
+<ParamField path="_RenderTextureMultiplier" type="float" range="1 to 10" default="1">
+  Multiplier for render texture intensity when using AudioLink.
+</ParamField>
+
+<ParamField path="_UseTraditionalSampling" type="bool" default="false">
+  Use traditional texture sampling instead of AudioLink-specific sampling.
+</ParamField>
+
+<ParamField path="_IntersectionMod" type="float" range="0.00001 to 10" default="1">
+  Intersection modification for AudioLink mode.
+</ParamField>
+
+## See Also
+
+- [Moving Light Shaders](/api/shaders/moving-lights) - Parent shader properties
+- [Shader Overview](/api/shaders/overview) - System architecture
+- [Static Lights](/api/shaders/static-lights) - Static light alternatives

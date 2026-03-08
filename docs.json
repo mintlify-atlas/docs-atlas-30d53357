@@ -1,122 +1,109 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "VR Stage Lighting",
+  "theme": "aspen",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#8B5CF6",
+    "light": "#A78BFA",
+    "dark": "#6D28D9"
   },
   "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/AcChosen/VR-Stage-Lighting"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/AcChosen/VR-Stage-Lighting"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "introduction",
+              "installation",
+              "quickstart"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/dmx-system",
+              "concepts/audiolink-integration",
+              "concepts/shader-architecture",
+              "concepts/video-streaming"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Fixtures",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "fixtures/overview",
+              "fixtures/moving-lights",
+              "fixtures/static-lights",
+              "fixtures/lasers",
+              "fixtures/disco-ball"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Components",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "components/dmx-static",
+              "components/audiolink-static",
+              "components/grid-reader",
+              "components/local-ui-control-panel"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/dmx-setup",
+              "guides/audiolink-setup",
+              "guides/streaming-setup",
+              "guides/performance-optimization",
+              "guides/custom-fixtures"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Scripts",
             "pages": [
-              "api-reference/introduction"
+              "api/vrstagelighting-dmx-static",
+              "api/vrstagelighting-audiolink-static",
+              "api/vrstagelighting-audiolink-laser",
+              "api/vrsl-localuicontrolpanel",
+              "api/vrsl-gridreader"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Shaders",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/shaders/overview",
+              "api/shaders/moving-lights",
+              "api/shaders/static-lights",
+              "api/shaders/volumetric"
+            ]
+          },
+          {
+            "group": "Editor Tools",
+            "pages": [
+              "api/editor/manager-window",
+              "api/editor/dmx-patch-exporter",
+              "api/editor/fixture-definitions"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

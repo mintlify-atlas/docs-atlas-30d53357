@@ -1,0 +1,125 @@
+---
+title: "Introduction"
+description: "Professional stage lighting for VRChat with DMX512 control and AudioLink integration"
+---
+
+<Note>
+VR Stage Lighting is a Unity framework that brings professional-quality stage lighting into VRChat worlds with real-time DMX control and audio-reactive effects.
+</Note>
+
+## What is VR Stage Lighting?
+
+VR Stage Lighting (VRSL) is a comprehensive Unity package designed to emulate the quality, control, and complexity of professional stage lighting in VRChat. Built over years of development, VRSL provides a performant, hardware-accelerated lighting system that works seamlessly in VR environments.
+
+The framework includes:
+
+<CardGroup cols={2}>
+  <Card title="DMX512 Control" icon="grid" href="/concepts/dmx-system">
+    Real-time lighting control via DMX512 protocol through video streaming
+  </Card>
+  <Card title="AudioLink Integration" icon="waveform" href="/concepts/audiolink-integration">
+    Audio-reactive lighting effects synced to music in real-time
+  </Card>
+  <Card title="Shader-Based System" icon="sparkles" href="/concepts/shader-architecture">
+    Hardware-accelerated rendering with GPU instancing for optimal performance
+  </Card>
+  <Card title="Unity Editor Tools" icon="wrench" href="/api/editor/manager-window">
+    Comprehensive editor tools for fixture management and DMX patching
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="DMX512 Video Streaming">
+    Control lights in real-time using industry-standard DMX software through the Artnet Grid Node system. Stream DMX data via video to synchronize all players in your VRChat instance.
+  </Accordion>
+
+  <Accordion title="Moving Lights">
+    Full-featured moving lights with pan/tilt control, gobo projection, color mixing, and volumetric rendering. Includes spotlight and washlight fixtures.
+  </Accordion>
+
+  <Accordion title="Static Lights">
+    PAR lights, blinders, flashers, and light bars with individual control over intensity, color, and strobe effects.
+  </Accordion>
+
+  <Accordion title="Audio Reactivity">
+    Native AudioLink integration allows lights to react to different frequency bands of audio, creating dynamic light shows synchronized to music.
+  </Accordion>
+
+  <Accordion title="VR Optimized">
+    Shader-based rendering avoids expensive Unity real-time lights. GPU instancing and batching ensure smooth performance even with dozens of fixtures.
+  </Accordion>
+
+  <Accordion title="Local Control">
+    Per-user UI control panel allows players to adjust brightness levels locally without affecting others, ensuring accessibility and comfort.
+  </Accordion>
+</AccordionGroup>
+
+## How It Works
+
+VRSL uses a unique approach to bring professional lighting control into VRChat:
+
+1. **Video-based DMX transmission** - DMX data is encoded into video pixels and streamed through VRChat's video player system
+2. **Shader-based decoding** - Custom shaders read the video pixels and extract DMX channel data directly on the GPU
+3. **Hardware acceleration** - All lighting calculations happen in shaders, with GPU instancing for minimal overhead
+4. **UdonSharp control** - Optional runtime control through VRChat's UdonSharp scripting system
+
+This architecture enables:
+- **Synchronized control** across all players in an instance
+- **Live streaming** support for real-time performances
+- **Low latency** DMX response times
+- **Minimal CPU usage** with shader-based computation
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Virtual Clubs" icon="music">
+    Create immersive nightclub experiences with professional lighting synchronized to DJs and live music
+  </Card>
+  <Card title="Concert Venues" icon="microphone-stand">
+    Build virtual concert halls with full lighting rigs for live performances and music festivals
+  </Card>
+  <Card title="Theater Productions" icon="masks-theater">
+    Design theatrical lighting setups with precise control over spotlights and scene lighting
+  </Card>
+  <Card title="Event Spaces" icon="calendar-star">
+    Craft customizable event venues with dynamic lighting for meetups and gatherings
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+Ready to add professional lighting to your VRChat world?
+
+<Steps>
+  <Step title="Install the package">
+    Add VRSL to your Unity project via VPM (VRChat Package Manager)
+    
+    [View installation guide →](/installation)
+  </Step>
+  
+  <Step title="Choose your control method">
+    Decide between DMX control (requires external software) or AudioLink (audio-reactive)
+    
+    [Learn about control methods →](/concepts/dmx-system)
+  </Step>
+  
+  <Step title="Add your first fixture">
+    Place lighting fixtures in your scene and configure them
+    
+    [Follow the quickstart →](/quickstart)
+  </Step>
+</Steps>
+
+## Community
+
+Join the growing VRSL community:
+
+- **Discord**: [vrsl.dev](https://vrsl.dev) - Get help, share creations, and discuss lighting design
+- **Example World**: [Club Orion](https://vrchat.com/home/launch?worldId=wrld_b2d9f284-3a77-4a8a-a58e-f8427f87ba79) - See VRSL in action
+- **GitHub**: Report issues, contribute code, and follow development
+
+<Tip>
+Check out the [Orion Music Festival example video](https://youtu.be/b6SjQHFF6Qo) to see what's possible with VRSL!
+</Tip>

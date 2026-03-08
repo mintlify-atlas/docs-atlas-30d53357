@@ -1,0 +1,278 @@
+---
+title: DMX512 Video Streaming System
+description: Learn how VRSL encodes DMX lighting control data into video pixels for real-time streaming
+icon: video
+---
+
+## Overview
+
+VRSL's core innovation is transmitting DMX512 lighting data through a video stream. This approach enables synchronized lighting control across all users in a VRChat world, allowing live performances and real-time lighting programming from external software.
+
+<Info>
+The system is **95% shader-based**, including pixel reading from the video stream. Only 5% uses scripts for GPU instancing and property management.
+</Info>
+
+## Why Video Streaming?
+
+VRSL uses video streaming to achieve three critical goals:
+
+1. **Universal Sync** - All players see the same lighting state regardless of when they joined
+2. **User Control** - Any user can stream their own lighting design to the world
+3. **Live Performance** - Enables real-time control during events with minimal latency
+
+## The Grid Node System
+
+The **VRSL Grid Node** (sold separately) receives Art-Net or sACN DMX data and converts it into a video texture:
+
+- Each **16×16 pixel block** represents **one DMX channel**
+- Supports **vertical mode** (13 columns × 67 rows = 871 channels) or **horizontal mode** (120 × 13 = 1,560 channels)
+- Can operate in **RGB mode** for expanded universe support (up to 9 universes)
+- Uses OSC for real-time synchronization during editor testing
+
+### Grid Layout
+
+In vertical mode, the grid is organized as:
+
+```
+┌─────────────────────────────────┐
+│ 13 channels wide                │
+│ 67 channels tall                │
+│                                 │
+│ Each cell = 16×16 pixels        │
+│ Color = DMX value (0-255)       │
+└─────────────────────────────────┘
+```
+
+## Channel Encoding
+
+### Standard Mode
+
+In standard mode, a single DMX value is encoded across all RGB components:
+
+```csharp
+// From GridReader.cs:95-103
+_Buf[_pktData[0] - 1].r = _pktData[1] / 255f;
+_Buf[_pktData[0] - 1].g = _pktData[1] / 255f;
+_Buf[_pktData[0] - 1].b = _pktData[1] / 255f;
+```
+
+The shader reads this using luminance conversion:
+
+```hlsl
+// From VRSL-DMXFunctions.cginc:110-112
+float3 cRGB = float3(c.r, c.g, c.b);
+value = LinearRgbToLuminance(cRGB);
+```
+
+### RGB Mode (Nine Universe)
+
+With `_NineUniverseMode` enabled, each color channel encodes a separate universe:
+
+```csharp
+// GridReader.cs:95-97
+_Buf[_pktData[0] - 1].r = _pktData[1] / 255f;  // Universe 1, 4, 7
+_Buf[_pktData[0] - 1].g = _pktData[2] / 255f;  // Universe 2, 5, 8
+_Buf[_pktData[0] - 1].b = _pktData[3] / 255f;  // Universe 3, 6, 9
+```
+
+Shader decoding selects the appropriate color channel:
+
+```hlsl
+// VRSL-DMXFunctions.cginc:103-107
+if(getNineUniverseMode() && _EnableCompatibilityMode != 1)
+{
+    value = c.r;
+    value = IF(targetColor > 0, c.g, value);
+    value = IF(targetColor > 1, c.b, value);
+}
+```
+
+## Sector & Channel Addressing
+
+VRSL uses a **sector-based addressing system** to locate channels in the grid:
+
+### Coordinate Calculation
+
+```hlsl
+// From VRSL-DMXFunctions.cginc:79-93
+uint x = DMXChannel % 13;           // Column (1-13)
+x = x == 0.0 ? 13.0 : x;
+float y = DMXChannel / 13.0;       // Row/sector
+y = frac(y) == 0.00000 ? y - 1 : y;
+
+// Special handling for 13th channel edge cases
+if(x == 13.0) {
+    y = DMXChannel >= 90 && DMXChannel <= 101 ? y - 1 : y;
+    y = DMXChannel >= 160 && DMXChannel <= 205 ? y - 1 : y;
+    y = DMXChannel >= 326 && DMXChannel <= 404 ? y - 1 : y;
+    y = DMXChannel >= 676 && DMXChannel <= 819 ? y - 1 : y;
+    y = DMXChannel >= 1339 ? y - 1 : y;
+}
+```
+
+### UV Mapping
+
+The calculated sector coordinates are converted to texture UV coordinates:
+
+```hlsl
+// VRSL-DMXFunctions.cginc:52-60
+float2 IndustryRead(int x, int y)
+{
+    float resMultiplierX = (_Udon_DMXGridRenderTexture_TexelSize.z / 13);
+    float2 xyUV = float2(0.0, 0.0);
+    
+    xyUV.x = ((x * resMultiplierX) * _Udon_DMXGridRenderTexture_TexelSize.x);
+    xyUV.y = (y * resMultiplierX) * _Udon_DMXGridRenderTexture_TexelSize.y;
+    return xyUV;
+}
+```
+
+<Note>
+The system includes special offset corrections for edge cases to compensate for streaming compression artifacts.
+</Note>
+
+## Reading DMX Values
+
+Shaders access DMX data using the `getValueAtCoords()` function:
+
+```hlsl
+// VRSL-DMXFunctions.cginc:70-116
+half getValueAtCoords(uint DMXChannel, sampler2D _Tex)
+{
+    uint universe = ceil(((int) DMXChannel) / 512.0);
+    int targetColor = getTargetRGBValue(universe);
+    
+    // Adjust channel for RGB mode
+    DMXChannel = targetColor > 0 ? 
+        DMXChannel - (((universe - (universe % 3)) * 512)) - (targetColor * 24) : 
+        DMXChannel;
+
+    // Calculate grid position
+    uint x = DMXChannel % 13;
+    x = x == 0.0 ? 13.0 : x;
+    half y = DMXChannel / 13.0;
+    y = frac(y) == 0.00000 ? y - 1 : y;
+    
+    float2 xyUV = IndustryRead(x, (y + 1.0));
+    half4 c = tex2Dlod(_Tex, float4(xyUV.x, xyUV.y, 0, 0));
+    
+    // Extract value based on mode
+    return getNineUniverseMode() ? 
+        (targetColor == 0 ? c.r : (targetColor == 1 ? c.g : c.b)) :
+        LinearRgbToLuminance(c.rgb);
+}
+```
+
+## Fixture Channel Layout
+
+VRSL fixtures use standardized DMX channel layouts:
+
+### Moving Light (13 channels)
+
+| Channel | Function | Read Function |
+|---------|----------|---------------|
+| +0 | Pan Coarse | `GetPanValue()` |
+| +1 | Pan Fine | `GetFinePanValue()` |
+| +2 | Tilt Coarse | `GetTiltValue()` |
+| +3 | Tilt Fine | `GetFineTiltValue()` |
+| +4 | Motor Speed/Cone Width | `getDMXConeWidth()` |
+| +5 | Dimmer/Intensity | `GetDMXIntensity()` |
+| +6 | Strobe | `GetStrobeOutput()` |
+| +7 | Red | `GetDMXColor().r` |
+| +8 | Green | `GetDMXColor().g` |
+| +9 | Blue | `GetDMXColor().b` |
+| +10 | GOBO Spin Speed | `getGoboSpinSpeed()` |
+| +11 | GOBO Selection | `getDMXGoboSelection()` |
+| +12 | (Reserved) | |
+
+<Tip>
+All channel reading functions automatically handle sector calculation, RGB mode, and value normalization.
+</Tip>
+
+## Legacy vs Industry Mode
+
+VRSL supports two grid reading modes:
+
+### Legacy Mode
+
+Older coordinate system for backward compatibility:
+
+```hlsl
+// VRSL-DMXFunctions.cginc:24-45
+float2 LegacyRead(int channel, int sector)
+{
+    float x = 0.02000;
+    float y = 0.02000;
+    
+    float ymod = floor(sector / 2.0);
+    float xmod = sector % 2.0;
+    
+    x += (xmod * 0.50);
+    y += (ymod * 0.04);
+    y -= sector >= 23 ? 0.025 : 0.0;
+    x += (channel * 0.04);
+    x -= sector >= 40 ? 0.01 : 0.0;
+    
+    return float2(x, y);
+}
+```
+
+### Industry Mode (Current)
+
+More efficient coordinate calculation with proper resolution scaling:
+
+```hlsl
+float resMultiplierX = (_Udon_DMXGridRenderTexture_TexelSize.z / 13);
+xyUV.x = ((x * resMultiplierX) * _Udon_DMXGridRenderTexture_TexelSize.x);
+xyUV.y = (y * resMultiplierX) * _Udon_DMXGridRenderTexture_TexelSize.y;
+```
+
+## Performance Characteristics
+
+### Hardware Acceleration
+
+- All pixel reading happens on the GPU
+- No CPU-side texture access or parsing
+- Uses point sampling (`VRSL_PointClampSampler`) to avoid interpolation
+- Supports GPU instancing for rendering hundreds of fixtures
+
+### Latency Sources
+
+1. **Streaming Delay** - Video encoding and network transmission (typically 0.5-2 seconds)
+2. **Video Player Buffering** - Unity/VRChat video player processing
+3. **Shader Evaluation** - Negligible (runs every frame on GPU)
+
+<Warning>
+Compression artifacts can scramble movement data. VRSL implements smoothing and interpolation to compensate, but rapid movements may appear delayed.
+</Warning>
+
+## Integration Example
+
+Reading and using DMX data in a custom shader:
+
+```hlsl
+// Get the fixture's DMX channel
+uint dmx = getDMXChannel();
+
+// Read individual channels
+half intensity = GetDMXIntensity(dmx, 1.0);
+half strobe = GetStrobeOutput(dmx);
+half4 color = GetDMXColor(dmx);
+half pan = GetPanValue(dmx);
+half tilt = GetTiltValue(dmx);
+
+// Apply values
+finalColor = color * intensity * strobe;
+fixture.rotation = calculateRotations(vertex, pan, tilt);
+```
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Shader Architecture" icon="code" href="/concepts/shader-architecture">
+    Learn how shaders decode and render DMX data
+  </Card>
+  <Card title="Video Streaming" icon="signal-stream" href="/concepts/video-streaming">
+    Understand the complete video streaming pipeline
+  </Card>
+</CardGroup>

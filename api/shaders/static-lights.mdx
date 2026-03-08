@@ -1,0 +1,378 @@
+---
+title: "Static Light Shaders"
+description: "Shader properties for fixed-position stage lighting fixtures"
+---
+
+## Overview
+
+Static light shaders provide fixed-position stage lighting effects including projection mapping and realistic lens flares. These lights don't include pan/tilt mechanics but offer the same projection and color control as moving lights.
+
+## Shader Paths
+
+### DMX Control
+- `VRSL/Standard Static/Projection`
+- `VRSL/Standard Static/Lens Flare`
+
+### AudioLink Control
+- `VRSL/AudioLink/Standard Static/Projection`
+- `VRSL/AudioLink/Standard Static/Lens Flare`
+
+## Projection Shader Properties
+
+### DMX Configuration
+
+<ParamField path="_DMXChannel" type="int" default="0">
+  DMX fixture number/sector. Each static light uses 13 channels in standard mode or 5 channels in 5CH mode.
+</ParamField>
+
+<ParamField path="_NineUniverseMode" type="bool" default="false">
+  Enable extended universe mode for up to 9 DMX universes.
+</ParamField>
+
+<ParamField path="_EnableDMX" type="bool" default="false">
+  Enable DMX control via render texture.
+</ParamField>
+
+<ParamField path="_ChannelMode" type="enum" default="0">
+  Channel mode:
+  - `0`: 13CH - Full control (13 channels)
+  - `1`: 5CH - Simplified control (5 channels: intensity + RGB)
+</ParamField>
+
+<ParamField path="_EnableCompatibilityMode" type="bool" default="false">
+  Enable legacy DMX grid reading compatibility.
+</ParamField>
+
+<ParamField path="_EnableVerticalMode" type="bool" default="false">
+  Switch to vertical DMX grid layout.
+</ParamField>
+
+### Intensity and Color
+
+<ParamField path="_FinalIntensity" type="float" range="0 to 1" default="1">
+  Final intensity multiplier for the light output.
+</ParamField>
+
+<ParamField path="_GlobalIntensity" type="float" range="0 to 1" default="1">
+  Global intensity shared across all fixtures.
+</ParamField>
+
+<ParamField path="_GlobalIntensityBlend" type="float" range="0 to 1" default="1">
+  Blend between local and global intensity.
+</ParamField>
+
+<ParamField path="_UniversalIntensity" type="float" range="0 to 1" default="1">
+  Universal scene intensity multiplier.
+</ParamField>
+
+<ParamField path="_Emission" type="color" default="(1,1,1,1)">
+  Light color tint (HDR). Multiplied with DMX RGB values.
+</ParamField>
+
+<ParamField path="_FixtureMaxIntensity" type="float" range="0 to 6" default="1">
+  Maximum light intensity output.
+</ParamField>
+
+<ParamField path="_RedMultiplier" type="float" range="1 to 5" default="1">
+  Red channel multiplier for color correction.
+</ParamField>
+
+<ParamField path="_GreenMultiplier" type="float" range="1 to 5" default="1">
+  Green channel multiplier.
+</ParamField>
+
+<ParamField path="_BlueMultiplier" type="float" range="1 to 5" default="1">
+  Blue channel multiplier.
+</ParamField>
+
+### Projection Settings
+
+<ParamField path="_ProjectionMainTex" type="texture" default="white">
+  GOBO texture for projection pattern.
+</ParamField>
+
+<ParamField path="_ProjectionMaxIntensity" type="float" range="0 to 50" default="1">
+  Maximum projection intensity. Higher values create brighter projections.
+</ParamField>
+
+<ParamField path="_XOffset" type="float" range="-6 to 6" default="0">
+  Horizontal offset for projection in world space.
+</ParamField>
+
+<ParamField path="_YOffset" type="float" range="-6 to 6" default="0">
+  Vertical offset for projection in world space.
+</ParamField>
+
+<ParamField path="_ProjectionRange" type="float" range="0 to 20" default="0">
+  Drawing range for projection. Scales the projection mesh.
+</ParamField>
+
+<ParamField path="_ProjectionRangeOrigin" type="vector" default="(0, -0.07535, 0.12387, 0)">
+  Origin point for projection range scaling.
+</ParamField>
+
+<ParamField path="_ProjectionDistanceFallOff" type="float" range="0 to 1" default="1">
+  Attenuation constant for distance-based falloff.
+</ParamField>
+
+<ParamField path="_Fade" type="float" range="0 to 25" default="1">
+  Light range/falloff distance.
+</ParamField>
+
+<ParamField path="_FeatherOffset" type="float" range="0 to 1" default="1">
+  Attenuation quadratic factor. Controls falloff curve.
+</ParamField>
+
+<ParamField path="_ProjectionUVMod" type="float" range="0 to 1" default="0">
+  UV scale modifier for projection. Adjusts GOBO size.
+</ParamField>
+
+<ParamField path="_ModX" type="float" range="-2 to 2" default="1">
+  Projection UV X axis stretch.
+</ParamField>
+
+<ParamField path="_ModY" type="float" range="-2 to 2" default="1">
+  Projection UV Y axis stretch.
+</ParamField>
+
+<ParamField path="_ProjectionRotation" type="float" range="-180 to 180" default="0">
+  Static rotation angle for the projection in degrees.
+</ParamField>
+
+<ParamField path="_EnableSpin" type="bool" default="false">
+  Enable automatic projection rotation animation.
+</ParamField>
+
+<ParamField path="_SpinSpeed" type="float" range="0 to 10" default="0">
+  Speed of automatic projection rotation.
+</ParamField>
+
+<ParamField path="_UseWorldNorm" type="bool" default="false">
+  Use world normals instead of view normals for projection.
+</ParamField>
+
+<ParamField path="_ConeWidth" type="float" range="0 to 5" default="0">
+  Beam spread/specular strength.
+</ParamField>
+
+### Rendering Options
+
+<ParamField path="_RenderMode" type="enum" default="1">
+  Transparency rendering mode:
+  - `1`: Transparent
+  - `2`: AlphaToCoverage
+</ParamField>
+
+<ParamField path="_BlendSrc" type="enum" default="2">
+  Source blend mode.
+</ParamField>
+
+<ParamField path="_BlendDst" type="enum" default="1">
+  Destination blend mode.
+</ParamField>
+
+<ParamField path="_BlendOp" type="enum" default="0">
+  Blend operation.
+</ParamField>
+
+<ParamField path="_ZWrite" type="bool" default="false">
+  Enable depth buffer writing.
+</ParamField>
+
+<ParamField path="_AlphaToCoverage" type="bool" default="false">
+  Enable alpha to coverage for MSAA.
+</ParamField>
+
+<ParamField path="_ClippingThreshold" type="float" range="0 to 1" default="0.5">
+  Alpha clipping threshold.
+</ParamField>
+
+<ParamField path="_AlphaProjectionIntensity" type="float" range="0 to 1" default="0.5">
+  Alpha channel intensity for projection.
+</ParamField>
+
+<ParamField path="_MultiSampleDepth" type="bool" default="true">
+  Enable multi-sample depth texture reading.
+</ParamField>
+
+### Advanced Options
+
+<ParamField path="_UseRawGrid" type="bool" default="false">
+  Use raw unsmoothed DMX grid for instant response.
+</ParamField>
+
+<ParamField path="_EnableStrobe" type="bool" default="false">
+  Enable strobe effect support.
+</ParamField>
+
+<ParamField path="_StrobeFreq" type="float" range="0 to 25" default="1">
+  Strobe frequency in Hz.
+</ParamField>
+
+## Lens Flare Shader Properties
+
+The Lens Flare shader creates realistic lens flare effects with depth-based occlusion.
+
+### Core Properties
+
+<ParamField path="_MainTex" type="texture" default="white">
+  Lens flare texture. Typically a circular gradient or starburst pattern.
+</ParamField>
+
+<ParamField path="_FixtureMaxIntensity" type="float" range="0 to 15" default="1">
+  Maximum light intensity for the lens flare.
+</ParamField>
+
+<ParamField path="_FixutreIntensityMultiplier" type="float" range="1 to 150" default="1">
+  Intensity multiplier for bloom scaling. Higher values create more intense bloom effects.
+</ParamField>
+
+<ParamField path="_FadeAmt" type="float" range="0 to 1" default="1">
+  Fade strength from center to edge.
+</ParamField>
+
+<ParamField path="_ColorSat" type="float" range="0 to 1" default="1">
+  Color saturation strength. Lower values desaturate toward edges.
+</ParamField>
+
+### Scale and Distance
+
+<ParamField path="_ScaleFactor" type="float" range="0 to 0.01" default="1">
+  Overall scale factor for the lens flare.
+</ParamField>
+
+<ParamField path="_ReferenceDistance" type="float" default="2">
+  Reference distance for scaling calculations.
+</ParamField>
+
+<ParamField path="_UVScale" type="float" range="0.001 to 2" default="1">
+  UV scale for the flare texture.
+</ParamField>
+
+### Depth Occlusion
+
+<ParamField path="_UseDepthLight" type="bool" default="true">
+  Enable depth-based occlusion testing. Flare fades when objects are in front.
+</ParamField>
+
+<ParamField path="_LightSourceViewSpaceRadius" type="float" range="0 to 1" default="0.05">
+  Radius for depth occlusion sampling in view space.
+</ParamField>
+
+<ParamField path="_DepthOcclusionTestZBias" type="float" range="-1 to 1" default="-0.001">
+  Z-bias for depth comparison. Adjust to prevent self-occlusion.
+</ParamField>
+
+### Distance Fade
+
+<ParamField path="_StartFadeinDistanceWorldUnit" type="float" default="0.05">
+  Distance where flare starts to fade in (world units).
+</ParamField>
+
+<ParamField path="_EndFadeinDistanceWorldUnit" type="float" default="0.5">
+  Distance where flare is fully visible (world units).
+</ParamField>
+
+### Visual Polish
+
+<ParamField path="_RemoveTextureArtifact" type="float" range="0 to 0.1" default="0">
+  Removes texture artifacts by subtracting a small value.
+</ParamField>
+
+<ParamField path="_CurveMod" type="float" range="-3 to 8" default="5">
+  Light intensity curve modifier. Adjusts brightness response curve.
+</ParamField>
+
+<ParamField path="_UsePreMultiplyAlpha" type="bool" default="false">
+  Enable premultiplied alpha blending. Requires texture with correct alpha.
+</ParamField>
+
+### Flicker Animation (Optional)
+
+<ParamField path="_ShouldDoFlicker" type="bool" default="true">
+  Enable flickering animation for the lens flare.
+</ParamField>
+
+<ParamField path="_FlickerAnimSpeed" type="float" default="5">
+  Speed of the flicker animation.
+</ParamField>
+
+<ParamField path="_FlickResultIntensityLowestPoint" type="float" range="0 to 1" default="0.5">
+  Minimum intensity during flicker. 1.0 = no flicker.
+</ParamField>
+
+### Channel Modes
+
+The lens flare supports multiple DMX channel modes:
+
+<ParamField path="_ChannelMode" type="enum" default="2">
+  - `0`: 1CH - Intensity only
+  - `1`: 4CH - Intensity + RGB
+  - `2`: 5CH - Intensity + RGB + Strobe
+  - `3`: 13CH - Full control
+</ParamField>
+
+## Usage Examples
+
+### Static Projection Light
+
+1. Create a projection mesh (cone or pyramid)
+2. Assign `VRSL/Standard Static/Projection` shader
+3. Set DMX channel with `_DMXChannel`
+4. Assign GOBO texture to `_ProjectionMainTex`
+5. Adjust `_ProjectionRange` to fit the scene
+6. Set `_ProjectionMaxIntensity` for desired brightness
+
+### Lens Flare Setup
+
+1. Create a quad facing the camera
+2. Assign `VRSL/Standard Static/Lens Flare` shader
+3. Assign lens flare texture to `_MainTex`
+4. Set `_DMXChannel` to match the fixture
+5. Adjust `_ScaleFactor` for appropriate size
+6. Enable `_UseDepthLight` for realistic occlusion
+
+### Performance Tips
+
+**For Projection:**
+- Use lower `_ProjectionRange` to reduce overdraw
+- Disable `_MultiSampleDepth` on mobile platforms
+- Use simpler GOBO textures (lower resolution)
+
+**For Lens Flares:**
+- The depth occlusion test (`COUNT = 8`) performs 289 depth samples per flare
+- Disable `_UseDepthLight` for better performance if occlusion isn't needed
+- Reduce `_FixutreIntensityMultiplier` to decrease bloom overhead
+- Use `_AlphaToCoverage` mode for cleaner edges on MSAA
+
+## Technical Details
+
+### Depth Occlusion Algorithm
+
+The lens flare uses a grid-based depth sampling approach:
+
+```hlsl
+#define COUNT 8  // Creates a 17x17 grid (COUNT*2+1)²
+
+for(int x = -COUNT; x <= COUNT; x++)
+{
+    for(int y = -COUNT; y <= COUNT ; y++)
+    {
+        // Sample depth texture at grid point
+        // Compare with flare depth
+        // Accumulate visibility
+    }
+}
+```
+
+This provides smooth occlusion transitions as objects pass in front of the light.
+
+### Mirror Correction
+
+Both shaders include mirror depth correction for VRChat mirrors using frustum correction calculations.
+
+## See Also
+
+- [Moving Light Shaders](/api/shaders/moving-lights) - Moving head fixtures
+- [Shader Overview](/api/shaders/overview) - System architecture
+- [Volumetric Rendering](/api/shaders/volumetric) - Volumetric techniques

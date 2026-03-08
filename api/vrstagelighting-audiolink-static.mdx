@@ -1,0 +1,216 @@
+---
+title: VRStageLighting_AudioLink_Static
+description: AudioLink-reactive stage lighting fixture script
+---
+
+## Overview
+
+The `VRStageLighting_AudioLink_Static` class provides AudioLink integration for stage lighting fixtures in VRSL. It allows fixtures to react to audio in real-time by responding to different frequency bands, with support for color chords, theme colors, and texture sampling.
+
+This script is designed for fixtures that react to music rather than DMX control, making it ideal for dynamic, music-driven lighting setups.
+
+**Namespace:** `VRSL`  
+**Inherits from:** `UdonSharpBehaviour` (in VRChat) or `MonoBehaviour` (in Unity)
+
+## Audio Link Settings
+
+<ParamField path="enableAudioLink" type="bool" default="false">
+  Enable or disable Audio Link Reaction for this fixture.
+</ParamField>
+
+<ParamField path="band" type="AudioLinkBandState" default="Bass">
+  The frequency band of the spectrum to react to. Options: `Bass`, `Low_Mids`, `High_Mids`, `Treble`
+</ParamField>
+
+<ParamField path="delay" type="int" default="0" range="0-127">
+  The level of delay to add to the reaction. Higher values create a more delayed response to audio.
+</ParamField>
+
+<ParamField path="bandMultiplier" type="float" default="1.0" range="1.0-15.0">
+  Multiplier for the sensitivity of the reaction. Higher values make the fixture more responsive to audio.
+</ParamField>
+
+<ParamField path="enableColorChord" type="bool" default="false">
+  Enable Color Chord tinting of the light emission. This makes the light react to the dominant frequency color.
+</ParamField>
+
+## General Settings
+
+<ParamField path="globalIntensity" type="float" default="1.0" range="0-1">
+  Sets the overall intensity of the shader. Good for animating or scripting effects related to intensity. Its max value is controlled by Final Intensity.
+</ParamField>
+
+<ParamField path="finalIntensity" type="float" default="1.0" range="0-1">
+  Sets the maximum brightness value of Global Intensity. Good for personalized settings of the max brightness of the shader by other users via UI.
+</ParamField>
+
+<ParamField path="finalIntensityComponentMode" type="bool" default="false">
+  Choose between setting the Final Intensity for all meshes, or individual meshes.
+</ParamField>
+
+<ParamField path="finalIntensityVolumetric" type="float" default="1.0" range="0-1">
+  Sets the maximum brightness value of Global Intensity for volumetric meshes only.
+</ParamField>
+
+<ParamField path="finalIntensityProjection" type="float" default="1.0" range="0-1">
+  Sets the maximum brightness value of Global Intensity for projection meshes only.
+</ParamField>
+
+<ParamField path="finalIntensityFixture" type="float" default="1.0" range="0-1">
+  Sets the maximum brightness value of Global Intensity for fixture meshes only.
+</ParamField>
+
+<ParamField path="lightColorTint" type="Color" default="White * 2.0">
+  The main color of the light. Supports HDR colors.
+</ParamField>
+
+## Color Sampling
+
+<ParamField path="enableColorTextureSampling" type="bool" default="false">
+  Check this box if you wish to sample a separate texture for the color. The color will be influenced by the intensity of the original emission color. The texture is set in the shader itself.
+</ParamField>
+
+<ParamField path="traditionalColorTextureSampling" type="bool" default="false">
+  Check this box if you wish to use traditional color sampling instead of white to black conversion.
+</ParamField>
+
+<ParamField path="textureSamplingCoordinates" type="Vector2" default="(0.5, 0.5)">
+  The UV coordinates to sample the color from on the texture.
+</ParamField>
+
+<ParamField path="enableThemeColorSampling" type="bool" default="false">
+  Check this box if you wish to enable AudioLink Theme colors.
+</ParamField>
+
+<ParamField path="themeColorTarget" type="int" default="1" range="1-4">
+  Theme Color to Sample from. AudioLink supports 4 theme colors.
+</ParamField>
+
+## Movement Settings
+
+<ParamField path="targetToFollow" type="Transform" default="null">
+  The target for this mover to follow. When set, the fixture will automatically aim at this transform.
+</ParamField>
+
+## Fixture Settings
+
+<ParamField path="spinSpeed" type="float" default="4.0" range="-10 to 10">
+  Projection Spin Speed (Udon Override Only). Negative values spin in the opposite direction.
+</ParamField>
+
+<ParamField path="enableAutoSpin" type="bool" default="false">
+  Enable projection spinning (Udon Override Only).
+</ParamField>
+
+<ParamField path="selectGOBO" type="int" default="1" range="1-8">
+  Use this to change what projection is selected.
+</ParamField>
+
+## Mesh Settings
+
+<ParamField path="objRenderers" type="MeshRenderer[]" required>
+  The meshes used to make up the light. You need at least 1 mesh in this group for the script to work properly. Supports up to 5 mesh renderers.
+</ParamField>
+
+<ParamField path="coneWidth" type="float" default="2.5" range="0-5.5">
+  Controls the radius of a mover/spot light.
+</ParamField>
+
+<ParamField path="coneLength" type="float" default="1.0" range="0.001-10.0">
+  Controls the length of the cone of a mover/spot light.
+</ParamField>
+
+<ParamField path="maxConeLength" type="float" default="8.5" range="0.275-10.0">
+  Controls the mesh length of the cone of a mover/spot light.
+</ParamField>
+
+## Public Methods
+
+### _UpdateInstancedProperties()
+
+Updates all material property blocks with current fixture settings including AudioLink parameters.
+
+```csharp
+public void _UpdateInstancedProperties()
+```
+
+### _UpdateInstancedPropertiesSansAudioLink()
+
+Updates material property blocks without AudioLink functionality enabled.
+
+```csharp
+public void _UpdateInstancedPropertiesSansAudioLink()
+```
+
+### _SetProps()
+
+Initializes the MaterialPropertyBlock for this fixture.
+
+```csharp
+public void _SetProps()
+```
+
+## Properties (for Udon Scripting)
+
+All public fields have corresponding properties for safe access from Udon scripts:
+
+- `LightColorTint` - Get/Set the light color
+- `ConeWidth` - Get/Set the cone width
+- `ConeLength` - Get/Set the cone length
+- `MaxConeLength` - Get/Set the maximum cone length
+- `GlobalIntensity` - Get/Set the global intensity
+- `FinalIntensity` - Get/Set the final intensity
+- `FinalIntensityComponentMode` - Get/Set component mode
+- `FinalIntensityVolumetric` - Get/Set volumetric intensity
+- `FinalIntensityProjection` - Get/Set projection intensity
+- `FinalIntensityFixture` - Get/Set fixture intensity
+- `SelectGOBO` - Get/Set the selected gobo
+- `EnableAudioLink` - Get/Set AudioLink enabled state
+- `Band` - Get/Set the frequency band
+- `Delay` - Get/Set the reaction delay
+- `BandMultiplier` - Get/Set the band multiplier
+- `TextureSamplingCoordinates` - Get/Set texture sampling coordinates
+- `SpinSpeed` - Get/Set projection spin speed
+- `ProjectionSpin` - Get/Set projection spin enabled
+- `ColorChord` - Get/Set color chord enabled
+- `ColorTextureSampling` - Get/Set texture sampling enabled
+- `TraditionalColorTextureSampling` - Get/Set traditional sampling mode
+- `ThemeColorSampling` - Get/Set theme color sampling enabled
+- `ThemeColorTarget` - Get/Set theme color target
+
+## Usage Example
+
+```csharp
+// Example: Setting up an AudioLink reactive fixture
+VRStageLighting_AudioLink_Static fixture = GetComponent<VRStageLighting_AudioLink_Static>();
+
+// Enable AudioLink and configure it to react to bass
+fixture.EnableAudioLink = true;
+fixture.Band = AudioLinkBandState.Bass;
+fixture.BandMultiplier = 2.5f;
+
+// Enable color chord for dynamic colors
+fixture.ColorChord = true;
+
+// Set intensity
+fixture.GlobalIntensity = 1.0f;
+fixture.FinalIntensity = 0.9f;
+
+// Apply changes
+fixture._UpdateInstancedProperties();
+```
+
+## AudioLink Band States
+
+| Band State | Description |
+|------------|-------------|
+| `Bass` | Reacts to low frequency bass (20-200 Hz) |
+| `Low_Mids` | Reacts to low-mid frequencies (200-500 Hz) |
+| `High_Mids` | Reacts to high-mid frequencies (500-2000 Hz) |
+| `Treble` | Reacts to high frequencies (2000-20000 Hz) |
+
+## Related Components
+
+- [VRStageLighting_DMX_Static](/api/vrstagelighting-dmx-static) - DMX-controlled fixtures
+- [VRStageLighting_AudioLink_Laser](/api/vrstagelighting-audiolink-laser) - AudioLink laser effects
+- [VRSL_LocalUIControlPanel](/api/vrsl-localuicontrolpanel) - Local UI control panel for VRSL

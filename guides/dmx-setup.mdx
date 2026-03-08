@@ -1,0 +1,326 @@
+---
+title: DMX Setup with Artnet Grid Node
+description: Complete guide to setting up real-time DMX control for VR Stage Lighting using the Artnet Grid Node system
+---
+
+## Overview
+
+VRSL's DMX control system allows you to transmit professional DMX512 lighting data into VRChat through a video stream. This enables synchronized, real-time control of stage lighting across all players in an instance.
+
+<Note>
+The Artnet Grid Node is a separate commercial product available on [Gumroad](https://gumroad.com/l/xYaPu). While VRSL's shaders and scripts are open source, the Grid Node software is required for DMX functionality.
+</Note>
+
+## How It Works
+
+The system encodes DMX data as pixels in a video grid, which is then streamed to VRChat. VRSL's shaders read these pixels and convert them back to lighting data - all processed on the GPU for maximum performance.
+
+### Key Advantages
+- **Universal Sync**: All players see the same lighting in real-time
+- **Hardware Accelerated**: 95% shader-based computation
+- **Industry Standard**: Works with any Artnet-compatible software or hardware
+- **Live Performance Ready**: Enables real-time lighting control during events
+
+## Prerequisites
+
+### Required Software
+- Unity 2019.4 or newer
+- VRChat SDK3 for Worlds
+- UdonSharp
+- VRSL package (via VPM)
+- AudioLink v2.7+ (recommended)
+- Streaming software (OBS Studio recommended)
+
+### Required Hardware
+- At least one extra monitor (16:9 resolution recommended)
+- Sufficient GPU for encoding video stream
+- Stable internet connection for streaming
+
+### Optional
+- VRSL Artnet Grid Node software
+- DMX lighting console or software (QLC+, LightKey, etc.)
+
+## Installation Steps
+
+<Steps>
+
+### Install VRSL via VPM
+
+1. Visit [vpm.vrsl.dev](https://vpm.vrsl.dev) and add the VRSL repository to VCC
+2. Open your VRChat world project in VCC
+3. Add "VR Stage Lighting" package to your project
+4. Wait for Unity to import all assets
+
+### Add the Control Panel
+
+1. In Unity, navigate to `VRSL > Control Panel` menu
+2. Click "Spawn VRSL-LocalUIControlPanel"
+3. Position the control panel in your scene
+4. Configure DMX mode:
+   - **Horizontal Mode** (default, recommended for new setups)
+   - **Vertical Mode** (alternative layout)
+   - **Legacy Mode** (for backwards compatibility)
+
+<Tip>
+Horizontal mode offers better compression resilience and is recommended for most streaming setups.
+</Tip>
+
+### Add a DMX Video Reader
+
+1. In the VRSL Control Panel, navigate to the "Spawns" section
+2. Choose a video reader based on your video player:
+   - **TekOSC Grid Reader** (included, uses OSC)
+   - **USharpVideo DMX Screen** (requires USharpVideo package)
+   - **ProTV DMX Screen** (requires ProTV package)
+   - **VideoTXL DMX Screen** (requires VideoTXL package)
+3. Click the spawn button for your chosen reader
+4. Position the video screen where players can see it (or hide it if using OSC)
+
+### Configure the Video Reader
+
+1. Select the spawned video reader object
+2. Set the correct DMX mode (must match Control Panel setting)
+3. Configure video player settings:
+   - Set video URL to your stream
+   - Enable looping if testing with recorded video
+   - Adjust resolution to match your grid (typically 1920x1080)
+
+### Add DMX Fixtures
+
+1. Open VRSL Control Panel
+2. In the "Spawns" section, select fixture type:
+   - **Spotlight** - Moving head spot light
+   - **Washlight** - Moving head wash light  
+   - **Blinder** - High-intensity strobe/blinder
+   - **Flasher** - Compact strobe light
+   - **PAR Light** - Static PAR can
+   - **Light Bar** - Multi-cell light bar
+   - **Disco Ball** - Mirror ball effect
+3. Choose DMX variant (horizontal, vertical, or legacy)
+4. Place fixtures in your scene
+
+### Configure Fixture DMX Addressing
+
+1. Select a fixture in the hierarchy
+2. In the Inspector, find the `VRStageLighting_DMX_Static` component
+3. Configure addressing:
+   - **DMX Universe**: 1-9 (enable Extended Universes in Control Panel for 2-9)
+   - **DMX Channel**: Starting channel (1-512)
+   - **Fixture ID**: Unique identifier for vertical/legacy modes
+4. Set movement limits:
+   - **Max/Min Pan**: Horizontal rotation range
+   - **Max/Min Tilt**: Vertical rotation range
+5. Configure fixture properties:
+   - **Global Intensity**: Master brightness
+   - **Light Color Tint**: Base color
+   - **Cone Width/Length**: Beam size
+
+</Steps>
+
+## Setting Up Artnet Grid Node
+
+<Warning>
+This section requires the commercial Artnet Grid Node software. Skip this if you're testing with pre-recorded DMX video.
+</Warning>
+
+### Configure Grid Node Output
+
+1. Launch Artnet Grid Node application
+2. Select your output resolution (1920x1080 recommended)
+3. Choose grid mode:
+   - **Horizontal**: Matches VRSL Horizontal Mode
+   - **Vertical**: Matches VRSL Vertical Mode
+   - **Legacy**: Matches VRSL Legacy Mode
+4. Configure Artnet input:
+   - Set IP address (usually 127.0.0.1 for local)
+   - Enable universes you're using (1-9)
+   - Set frame rate (30fps recommended)
+
+### Route Grid Node to Streaming Software
+
+1. In OBS Studio, add a Window Capture or Display Capture source
+2. Select the Artnet Grid Node window
+3. Scale to fill your stream output (1920x1080)
+4. Add to your streaming scene
+
+<Tip>
+Use a dedicated monitor for the Grid Node output to avoid capture issues. Set it to 1920x1080 resolution for best results.
+</Tip>
+
+### Connect Your Lighting Software
+
+1. In your DMX software (QLC+, LightKey, etc.):
+2. Enable Artnet output
+3. Set IP to 127.0.0.1 (or Grid Node PC IP if networked)
+4. Configure universes to match your fixtures
+5. Patch your fixtures to DMX channels matching Unity setup
+
+## Streaming Configuration
+
+### OBS Settings
+
+**Video Settings:**
+- Base Resolution: 1920x1080
+- Output Resolution: 1920x1080  
+- FPS: 30 (or 60 for smoother movement)
+
+**Encoder Settings:**
+- Encoder: x264 or NVENC
+- Rate Control: CBR
+- Bitrate: 6000 kbps minimum (higher is better)
+- Keyframe Interval: 2
+- Preset: Quality or High Quality
+
+<Warning>
+**Critical**: Disable any compression or quality loss features:
+- No downscaling filters
+- No sharpening
+- No color correction on the DMX grid source
+- Use "Lanczos" scaling filter if resizing is necessary
+</Warning>
+
+### Minimizing Latency
+
+**In OBS:**
+- Use Studio Mode to avoid cut transitions
+- Reduce output delay settings
+- Use wired network connection
+
+**In Unity/VRChat:**
+- Position video screen close to spawn point
+- Use higher bitrate streams
+- Enable interpolation in CRT materials for smoother movement
+
+## Testing Your Setup
+
+<Steps>
+
+### Test in Unity Editor
+
+1. Enter Play Mode in Unity
+2. Check VRSL Control Panel:
+   - Verify correct DMX mode is active
+   - Confirm Custom Render Textures are updating
+3. Open Scene view to see fixture gizmos
+4. Send test DMX data from your lighting console
+
+### Test Interpolation
+
+1. In VRSL Control Panel > Options > CRT Materials
+2. Select Movement Interpolation material
+3. Adjust smoothing values:
+   - **Minimum Smoothness**: 0 = most smooth (default)
+   - **Maximum Smoothness**: 1 = no smoothing
+4. Test fixture movement at different smoothing levels
+
+<Tip>
+Keep smoothing at maximum (0) for best compression artifact compensation. Only reduce smoothing temporarily if you need quick fixture movements.
+</Tip>
+
+### Test in VRChat
+
+1. Build and publish your world
+2. Enter the world in VRChat
+3. Verify video stream is playing correctly
+4. Test all DMX channels and fixture responses
+5. Check sync across multiple users
+
+</Steps>
+
+## Common Issues
+
+### Fixtures Not Responding
+
+**Check:**
+- DMX mode matches between Control Panel, Video Reader, and Grid Node
+- Video stream is playing (not frozen or buffering)
+- DMX addressing is correct (universe and channel)
+- Fixtures are enabled in Control Panel
+- Custom Render Textures are set to Realtime update mode
+
+### Jittery or Erratic Movement  
+
+**Solutions:**
+- Increase stream bitrate (minimum 6000 kbps)
+- Enable interpolation in CRT movement material
+- Keep smoothing at maximum (0) for most situations
+- Check for compression artifacts in stream
+- Use wired network connection instead of WiFi
+
+### Delayed Response
+
+**Reduce latency by:**
+- Using lower-latency streaming protocol
+- Reducing keyframe interval
+- Minimizing network hops
+- Using local streaming server
+- Enabling hardware encoding (NVENC/Quick Sync)
+
+### Color Incorrect or Washed Out
+
+**Verify:**
+- Color space is set to Linear in Unity (Project Settings > Player)
+- No color correction filters on DMX grid in OBS
+- Stream using lossless or high quality preset
+- Video compression is not too aggressive
+
+## Advanced Configuration
+
+### Extended Universes (9 Universe Mode)
+
+1. In VRSL Control Panel, enable "Extended Universes"
+2. This enables DMX Universes 1-9 (4590 channels total)
+3. All fixtures will automatically update to support 9-universe mode
+4. Configure Grid Node to output multiple universes
+
+### Signal Detection System
+
+For interpolated CRT shaders:
+
+1. Select the interpolation CRT material
+2. Enable "Signal Detection System" 
+3. This automatically disables DMX when invalid video is detected
+4. Useful for preventing issues during stream disconnects
+
+### Custom Fixture Profiles
+
+See [Creating Custom Fixtures](/guides/custom-fixtures) for detailed instructions on creating your own fixture definitions.
+
+## Best Practices
+
+<Tip>
+**For Live Performances:**
+- Test your full setup at least 24 hours before the event
+- Have backup pre-recorded DMX video ready
+- Use dedicated streaming hardware
+- Monitor stream health throughout the event
+- Have a "lights off" fallback state
+</Tip>
+
+**Optimization:**
+- Use GPU instancing (automatic with VRSL)
+- Keep fixture count under 50 per universe for best performance
+- Use appropriate volumetric quality settings
+- Disable depth light requirement on Quest builds
+- Use stencil masks to prevent light bleed into other rooms
+
+**Workflow:**
+- Organize fixtures into clear hierarchy (Universe 1, Universe 2, etc.)
+- Name fixtures descriptively ("Spot-Truss-Front-L")
+- Save DMX patch data using VRSL's patch export feature
+- Document your DMX addressing scheme
+- Use fixture groups in lighting console for easier control
+
+## Next Steps
+
+- Learn about [AudioLink Integration](/guides/audiolink-setup)
+- Optimize your world with [Performance Optimization](/guides/performance-optimization)
+- Create [Custom Fixtures](/guides/custom-fixtures)
+- Set up [Video Streaming](/guides/streaming-setup) for your performances
+
+## Resources
+
+- [VRSL Discord](https://vrsl.dev) - Community support
+- [Purchase Artnet Grid Node](https://gumroad.com/l/xYaPu)
+- [VRSL GitHub](https://github.com/AcChosen/VR-Stage-Lighting)
+- [AudioLink GitHub](https://github.com/llealloo/vrc-udon-audio-link)

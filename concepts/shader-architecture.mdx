@@ -1,0 +1,449 @@
+---
+title: Shader Architecture
+description: Understand VRSL's GPU-accelerated shader system for rendering stage lighting effects
+icon: microchip
+---
+
+## Overview
+
+VRSL's lighting system is **95% shader-based**, with nearly all computation happening on the GPU. This architecture enables hundreds of individually-controlled fixtures to render simultaneously with minimal performance impact.
+
+<Info>
+The shader architecture uses **GPU instancing** and **batching** to render multiple fixtures in a single draw call while maintaining per-fixture properties.
+</Info>
+
+## Shader Types
+
+VRSL provides shaders for different fixture components:
+
+### Moving Lights
+
+**Volumetric Mesh** - Renders light beams and fog effects
+- `/Runtime/Shaders/MovingLights/VRSL-StandardMover-VolumetricMesh.shader`
+- `/Runtime/Shaders/MovingLights/VRSL-WashMover-VolumetricMesh.shader`
+
+**Projection Mesh** - Renders GOBO patterns and projections
+- `/Runtime/Shaders/MovingLights/VRSL-StandardMover-ProjectionMesh.shader`
+- `/Runtime/Shaders/MovingLights/VRSL-WashMover-ProjectionMesh.shader`
+
+**Fixture Mesh** - Renders physical fixture body
+- `/Runtime/Shaders/MovingLights/VRSL-StandardMover-FixtureMesh.shader`
+- `/Runtime/Shaders/MovingLights/VRSL-WashMover-FixtureMesh.shader`
+
+### Static Lights
+
+**Static Light** - Fixed-position spotlights and washes
+- `/Runtime/Shaders/StaticLights/VRSL-StaticLight-ProjectionMesh.shader`
+- `/Runtime/Shaders/StaticLights/VRSL-StaticLight-LensFlare.shader`
+
+### Specialty
+
+**Lasers** - Laser beam effects
+- `/Runtime/Shaders/MovingLights/VRSL-BasicLaser-DMX.shader`
+
+**Surface Shaders** - LED strips and surfaces
+- `/Runtime/Shaders/Basic Surface Shaders/VRSL-StandardSurface-Opaque.shader`
+
+## Shader Includes Architecture
+
+Shaders are modular, sharing common functionality:
+
+```
+Shader
+  │
+  ├─ VRSLDMX.cginc              ─── Core DMX reading
+  │   └─ ReadDMX()
+  │   └─ GetDMXColor()
+  │   └─ GetStrobeOutput()
+  │
+  ├─ VRSL-DMXFunctions.cginc    ─── DMX helper functions
+  │   └─ getValueAtCoords()
+  │   └─ GetPanValue()
+  │   └─ GetTiltValue()
+  │
+  ├─ VRSL-AudioLink-Functions.cginc  ─── AudioLink integration
+  │   └─ GetAudioReactAmplitude()
+  │   └─ GetColorChordLight()
+  │
+  ├─ VRSL-StandardMover-Vertex.cginc ─── Vertex transformations
+  │   └─ calculateRotations()
+  │   └─ CalculateConeWidth()
+  │
+  └─ VRSL-LightingFunctions.cginc    ─── Rendering
+      └─ VolumetricLightingBRDF()
+      └─ ProjectionFrag()
+```
+
+## GPU Instancing
+
+VRSL uses Unity's GPU instancing to render multiple fixtures efficiently:
+
+### Instanced Properties
+
+```hlsl
+// From VRSLDMX.cginc:2-39
+UNITY_INSTANCING_BUFFER_START(Props)
+    UNITY_DEFINE_INSTANCED_PROP(uint, _DMXChannel)
+    UNITY_DEFINE_INSTANCED_PROP(uint, _NineUniverseMode)
+    UNITY_DEFINE_INSTANCED_PROP(uint, _EnableStrobe)
+    UNITY_DEFINE_INSTANCED_PROP(uint, _EnableDMX)
+    
+    UNITY_DEFINE_INSTANCED_PROP(float4, _Emission)
+    UNITY_DEFINE_INSTANCED_PROP(float, _GlobalIntensity)
+    UNITY_DEFINE_INSTANCED_PROP(float, _FinalIntensity)
+    UNITY_DEFINE_INSTANCED_PROP(float, _ConeWidth)
+    UNITY_DEFINE_INSTANCED_PROP(float, _ConeLength)
+    UNITY_DEFINE_INSTANCED_PROP(float, _MaxConeLength)
+    UNITY_DEFINE_INSTANCED_PROP(float, _MaxMinPanAngle)
+    UNITY_DEFINE_INSTANCED_PROP(float, _MaxMinTiltAngle)
+    
+    #ifdef _VRSL_AUDIOLINK_ON
+        UNITY_DEFINE_INSTANCED_PROP(float, _EnableAudioLink)
+        UNITY_DEFINE_INSTANCED_PROP(float, _Band)
+        UNITY_DEFINE_INSTANCED_PROP(float, _BandMultiplier)
+        UNITY_DEFINE_INSTANCED_PROP(float, _Delay)
+    #endif
+UNITY_INSTANCING_BUFFER_END(Props)
+```
+
+### Accessing Instanced Properties
+
+```hlsl
+// Example from VRSL-DMXFunctions.cginc:4-6
+uint getDMXChannel()
+{
+    return (uint) round(UNITY_ACCESS_INSTANCED_PROP(Props, _DMXChannel));
+}
+```
+
+<Tip>
+GPU instancing allows Unity to batch hundreds of fixtures into a single draw call, dramatically improving performance.
+</Tip>
+
+## Vertex Shader Operations
+
+Vertex shaders perform all geometric transformations:
+
+### Pan/Tilt Rotation
+
+```hlsl
+// From VRSL-StandardMover-Vertex.cginc:6-75
+half4 calculateRotations(appdata v, half4 input, int normalsCheck, half pan, half tilt)
+{
+    // Calculate pan (Y-axis rotation)
+    half angleY = radians(getOffsetY() + pan);
+    half c, s;
+    sincos(angleY, s, c);
+    
+    half3x3 rotateYMatrix = half3x3(c, -s, 0,
+                                    s, c, 0,
+                                    0, 0, 1);
+    
+    // Apply pan inversion if needed
+    rotateYMatrix = checkPanInvertY() == 1 ? transpose(rotateYMatrix) : rotateYMatrix;
+    
+    half3 localRotY = mul(rotateYMatrix, input.xyz);
+    
+    // Calculate tilt (X-axis rotation)
+    half3 newOrigin = input.w * _FixtureRotationOrigin.xyz;
+    input.xyz = v.color.b == 1.0 ? input.xyz - newOrigin : input.xyz;
+    
+    half angleX = radians(getOffsetX() + tilt);
+    sincos(angleX, s, c);
+    half3x3 rotateXMatrix = half3x3(1, 0, 0,
+                                    0, c, -s,
+                                    0, s, c);
+    
+    rotateXMatrix = checkTiltInvertZ() == 1 ? transpose(rotateXMatrix) : rotateXMatrix;
+    
+    // Combined rotation
+    half3x3 rotateXYMatrix = mul(rotateYMatrix, rotateXMatrix);
+    half3 localRotXY = mul(rotateXYMatrix, input.xyz);
+    
+    // Apply rotation only to blue vertices (moving parts)
+    input.xyz = v.color.b == 1.0 ? localRotXY + newOrigin : input.xyz;
+    // Apply pan only to green vertices (base)
+    input.xyz = v.color.g == 1.0 ? localRotY : input.xyz;
+    
+    return input;
+}
+```
+
+### Vertex Color Masking
+
+VRSL uses vertex colors to control which vertices are affected by transformations:
+
+| Color Channel | Purpose |
+|---------------|--------|
+| **Red** | Cone width/projection range scaling |
+| **Green** | Pan rotation (base) |
+| **Blue** | Pan + Tilt rotation (head) |
+
+```hlsl
+// Apply different transformations based on vertex color
+input.xyz = v.color.b == 1.0 ? localRotXY + newOrigin : input.xyz;  // Head
+input.xyz = v.color.g == 1.0 ? localRotY : input.xyz;              // Base
+```
+
+### Cone Width Calculation
+
+```hlsl
+// From VRSL-StandardMover-Vertex.cginc:169-204
+half4 CalculateConeWidth(appdata v, half4 input, half scalar, uint dmx)
+{
+    #if defined(VOLUMETRIC_YES)
+        half4 newOrigin = input.w * _FixtureRotationOrigin;
+        input.xyz = input.xyz - newOrigin;
+        scalar = -scalar;
+        
+        #ifdef WASH
+            scalar *= 2.0;
+            scalar -= 2.50;
+        #endif
+        
+        // Scale based on distance from origin
+        half distanceFromFixture = (v.uv.x) * (scalar);
+        distanceFromFixture = lerp(0, distanceFromFixture, pow(v.uv.x, _ConeSync));
+        
+        input.z = (input.z) + (-v.normal.z) * (distanceFromFixture);
+        input.x = (input.x) + (-v.normal.x) * (distanceFromFixture);
+        
+        // Length stretching
+        half3 originStretch = input.xyz;
+        half3 stretchedcoords = ((-v.tangent.y) * getMaxConeLength(dmx));
+        input.xyz = lerp(originStretch, (originStretch * stretchedcoords), 
+                        pow(v.uv.x, lerp(1, 0.1, v.uv.x) - 0.5));
+        input.xyz = IF(v.uv.x < 0.001, originStretch, input.xyz);
+        
+        input.xyz = input.xyz + newOrigin;
+        return input;
+    #endif
+}
+```
+
+<Note>
+Cone meshes use UV.x (0-1) to represent distance from fixture origin. This enables smooth scaling along the beam length.
+</Note>
+
+## Fragment Shader Operations
+
+### DMX Fragment Shader
+
+```hlsl
+// Main vertex shader setup (VRSL-StandardMover-Vertex.cginc:337-407)
+v2f vert(appdata v)
+{
+    v2f o;
+    UNITY_SETUP_INSTANCE_ID(v);
+    UNITY_INITIALIZE_OUTPUT(v2f, o);
+    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+    UNITY_TRANSFER_INSTANCE_ID(v, o);
+    
+    #ifdef VRSL_DMX
+        uint dmx = getDMXChannel();
+        half oscConeWidth = getDMXConeWidth(dmx);
+        half oscPanValue = GetPanValue(dmx);
+        half oscTiltValue = GetTiltValue(dmx);
+        
+        // Apply all transformations
+        v.vertex = CalculateConeWidth(v, v.vertex, oscConeWidth, dmx);
+        v.vertex = CalculateProjectionScaleRange(v, v.vertex, _ProjectionRange);
+        v.vertex = ConeScale(v, v.vertex, _MinimumBeamRadius);
+        v.vertex = calculateRotations(v, v.vertex, 0, oscPanValue, oscTiltValue);
+        
+        // Pass data to fragment shader
+        o.intensityStrobeGOBOSpinSpeed = half4(
+            GetDMXIntensity(dmx, 1.0),
+            GetStrobeOutput(dmx),
+            getGoboSpinSpeed(dmx),
+            getDMXGoboSelection(dmx)
+        );
+        o.rgbColor = GetDMXColor(dmx);
+    #endif
+    
+    o.pos = UnityObjectToClipPos(v.vertex);
+    return o;
+}
+```
+
+### Culling for Performance
+
+Fixtures are culled in the vertex shader if off or invisible:
+
+```hlsl
+// VRSL-StandardMover-Vertex.cginc:531-535
+if(((all(o.rgbColor <= half4(0.005,0.005,0.005,1)) || o.intensityStrobeGOBOSpinSpeed.x <= 0.01) && isDMX() == 1) 
+   || getGlobalIntensity() <= 0.005 
+   || getFinalIntensity() <= 0.005)
+{
+    v.vertex = half4(0,0,0,0);  // Collapse to point
+    o.pos = UnityObjectToClipPos(v.vertex);
+}
+```
+
+<Warning>
+This culling happens **per-fixture, per-frame** on the GPU, avoiding expensive CPU-side visibility checks.
+</Warning>
+
+## Volumetric Rendering
+
+Volumetric beams use several techniques:
+
+### Blinding Effect
+
+Intensifies beams when looking directly at the fixture:
+
+```hlsl
+// VRSL-StandardMover-Vertex.cginc:376-400
+float3 worldCam;
+worldCam.x = unity_CameraToWorld[0][3];
+worldCam.y = unity_CameraToWorld[1][3];
+worldCam.z = unity_CameraToWorld[2][3];
+float3 objCamPos = mul(unity_WorldToObject, float4(worldCam, 1)).xyz;
+objCamPos = InvertVolumetricRotations(float4(objCamPos,1), oscPanValue, oscTiltValue).xyz;
+
+half len = length(objCamPos.xy);
+len *= (len * _BlindingAngleMod);
+
+float4 originScreenPos = ComputeScreenPos(UnityObjectToClipPos(_FixtureRotationOrigin));
+float2 originScreenUV = originScreenPos.xy / originScreenPos.w;
+o.camAngleCamfade.x = saturate((1-distance(half2(0.5, 0.5), originScreenUV))-0.5);
+
+o.blindingEffect = clamp(0.6/len, 1.0, 20.0);
+half endBlind = lerp(1.0, o.blindingEffect, 0.15);
+o.blindingEffect = lerp(endBlind, o.blindingEffect * 2.2, o.camAngleCamfade.x);
+```
+
+### Noise Textures
+
+Adds realistic fog/haze texture:
+
+```hlsl
+#ifdef _HQ_MODE
+    o.uv2 = TRANSFORM_TEX(v.uv2, _NoiseTexHigh);
+#else
+    o.uv2 = TRANSFORM_TEX(v.uv2, _NoiseTex);
+#endif
+```
+
+### Depth Fade
+
+Prevents hard intersections with geometry:
+
+```hlsl
+COMPUTE_EYEDEPTH(o.screenPos.z);
+```
+
+## Projection Rendering
+
+GOBO projections use screen-space ray marching:
+
+### Ray Setup
+
+```hlsl
+// VRSL-StandardMover-Vertex.cginc:440-453
+o.pos = UnityObjectToClipPos(v.vertex);
+o.screenPos = ComputeScreenPos(o.pos);
+o.ray = UnityObjectToViewPos(v.vertex).xyz;
+o.ray *= half3(1,1,-1);  // Invert Z for projection
+```
+
+### Mirror Depth Correction
+
+```hlsl
+// VRSL-StandardMover-Vertex.cginc:461-463
+o.worldDirection.xyz = o.worldPos.xyz - _WorldSpaceCameraPos;
+o.worldDirection.w = dot(o.pos, CalculateFrustumCorrection());
+```
+
+```hlsl
+// From VRSL-StandardMover-Vertex.cginc:297-302
+inline float4 CalculateFrustumCorrection()
+{
+    float x1 = -UNITY_MATRIX_P._31/(UNITY_MATRIX_P._11*UNITY_MATRIX_P._34);
+    float x2 = -UNITY_MATRIX_P._32/(UNITY_MATRIX_P._22*UNITY_MATRIX_P._34);
+    return float4(x1, x2, 0, UNITY_MATRIX_P._33/UNITY_MATRIX_P._34 + x1*UNITY_MATRIX_P._13 + x2*UNITY_MATRIX_P._23);
+}
+```
+
+## Render Texture Pipeline
+
+VRSL uses custom render textures for advanced effects:
+
+### DMX Interpolation
+
+**DMXRTShader-DMXInterpolation.shader** - Smooths DMX values to reduce jitter from compression artifacts
+
+### Strobe Generation
+
+**DMXRTShader-StrobeTimings.shader** - Converts DMX strobe values to phase
+
+**DMXRTShader-StrobeOutput.shader** - Generates binary on/off from phase
+
+### Spin Timer
+
+**DMXRTShader-SpinnerTimer.shader** - Accumulates rotation for GOBO spin
+
+<Tip>
+Render textures are updated once per frame for all fixtures, then sampled by individual fixture shaders.
+</Tip>
+
+## Shader Keywords
+
+VRSL uses shader variants for different modes:
+
+```hlsl
+#pragma shader_feature_local _VRSLPAN_ON
+#pragma shader_feature_local _VRSLTILT_ON
+#pragma shader_feature_local _VRSL_AUDIOLINK_ON
+#pragma shader_feature_local VRSL_DMX
+#pragma shader_feature_local VRSL_AUDIOLINK
+#pragma shader_feature_local VOLUMETRIC_YES
+#pragma shader_feature_local PROJECTION_YES
+```
+
+This creates optimized shader variants:
+- DMX-only builds exclude AudioLink code
+- AudioLink-only builds exclude DMX code
+- Volumetric/projection variants optimize for specific mesh types
+
+## Performance Best Practices
+
+### Batching
+
+- Use GPU instancing for all fixtures
+- Group fixtures by material to maximize batching
+- Avoid per-fixture material changes
+
+### Culling
+
+- Fixtures auto-cull when off/dark
+- Use occlusion culling for fixtures behind walls
+- Disable fixtures far from players in large worlds
+
+### LOD Strategy
+
+- Reduce cone length for distant fixtures
+- Disable volumetrics beyond certain distance
+- Use simpler shaders for background/ambient lights
+
+### Texture Sampling
+
+- DMX grid uses point sampling (no filtering)
+- Noise textures use trilinear filtering
+- GOBO textures use mipmaps
+
+<Warning>
+Avoid sampling the DMX grid texture multiple times per channel. Cache reads in vertex shader.
+</Warning>
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="DMX System" icon="sliders" href="/concepts/dmx-system">
+    How DMX data is read by shaders
+  </Card>
+  <Card title="AudioLink Integration" icon="waveform" href="/concepts/audiolink-integration">
+    Audio-reactive shader features
+  </Card>
+</CardGroup>

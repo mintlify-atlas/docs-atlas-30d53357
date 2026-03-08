@@ -1,0 +1,292 @@
+---
+title: Grid Reader Component
+description: OSC communication bridge for receiving DMX data in Unity Editor
+---
+
+The `VRSL_GridReader` component is an editor-only utility that receives OSC (Open Sound Control) data from the VRSL Grid node and writes it to a texture buffer. This enables real-time DMX visualization and testing in the Unity Editor.
+
+<Note>
+  **Editor Only**: This component only functions in the Unity Editor and is automatically disabled in builds. It is used for development and testing purposes.
+</Note>
+
+## Overview
+
+The Grid Reader establishes an OSC listener that receives DMX channel data from VRChat and writes it to a `Texture2D` buffer. This texture is then used by VRSL shaders to control lighting fixtures in real-time during editor testing.
+
+## Inspector Properties
+
+### Configuration
+
+<ParamField path="_IsVertical" type="bool" default="true">
+  Enable if using the grid node in vertical mode. Affects how DMX channels are mapped to texture coordinates.
+  - **Vertical Mode**: 13 columns × 67 rows (871 channels)
+  - **Horizontal Mode**: 120 columns × 13 rows (~1560 channels)
+</ParamField>
+
+<ParamField path="_ExpandedUniverseSupport" type="bool" default="false">
+  Enable if you are using RGB mode to use additional universes. When enabled:
+  - Separate RGB channels for expanded color support
+  - Supports up to 9 universes with color splitting
+  - When disabled, uses single-channel grayscale mode
+</ParamField>
+
+<ParamField path="_OSCPort" type="int" default="12000">
+  The OSC port to listen on. Must match the port configured in the VRSL grid node.
+  
+  <Warning>
+    The listener actually uses `_OSCPort + 1` (default: 12001) to avoid conflicts with the grid node's main port.
+  </Warning>
+</ParamField>
+
+<ParamField path="_OSCPrefix" type="string" default="/VRSL">
+  OSC address prefix assigned in the VRSL grid node. Must match exactly for proper communication.
+</ParamField>
+
+### Internal Properties
+
+<ParamField path="_DataBuffer" type="Texture2D" required>
+  **DO NOT EDIT**: Internal texture buffer that stores DMX channel data. This texture is automatically generated and managed by the component.
+  
+  The texture dimensions depend on the mode:
+  - **Vertical**: 208×1072 pixels (16×16 pixel blocks per channel)
+  - **Horizontal**: 1920×208 pixels (16×16 pixel blocks per channel)
+</ParamField>
+
+## How It Works
+
+### Data Flow
+
+1. **OSC Reception**: Listens for OSC packets on `_OSCPort + 1`
+2. **Data Parsing**: Extracts DMX channel, R, G, B values from OSC messages
+3. **Buffer Writing**: Writes color data to corresponding texture pixels
+4. **Texture Update**: Applies changes to `_DataBuffer` texture
+5. **Shader Access**: VRSL shaders read from the texture to control fixtures
+
+### Channel Mapping
+
+Each DMX channel is represented by a 16×16 pixel block in the texture:
+
+**Standard Mode** (`_ExpandedUniverseSupport = false`):
+- All RGB channels set to same value (grayscale)
+- Single universe support
+- R = G = B = DMX value / 255
+
+**Expanded Mode** (`_ExpandedUniverseSupport = true`):
+- Separate RGB values per channel
+- Multi-universe support via color splitting
+- R = Red channel value / 255
+- G = Green channel value / 255  
+- B = Blue channel value / 255
+
+### Coordinate System
+
+**Vertical Mode**:
+```
+Channel index = (y × 13) + x
+Texture X = channel_x × 16
+Texture Y = channel_y × 16
+Columns: 0-12 (13 channels wide)
+Rows: 0-66 (67 channels tall)
+```
+
+**Horizontal Mode**:
+```
+Channel index = (x × 13) + y  
+Texture X = channel_x × 16
+Texture Y = channel_y × 16
+Columns: 0-119 (120 channels wide)
+Rows: 0-12 (13 channels tall)
+```
+
+## Configuration Steps
+
+### Basic Setup
+
+1. Add `VRSL_GridReader` component to a GameObject in your scene
+2. Create a new `Texture2D` asset for the `_DataBuffer`:
+   - **Vertical**: 208×1072, RGBA32, Point filtering
+   - **Horizontal**: 1920×208, RGBA32, Point filtering
+3. Assign the texture to `_DataBuffer` field
+4. Match `_IsVertical` to your grid node orientation
+5. Set `_OSCPort` to match your grid node configuration
+6. Set `_OSCPrefix` to match your grid node prefix
+
+### Grid Node Configuration
+
+In VRChat, configure your VRSL Grid node:
+
+1. Set OSC output port to match `_OSCPort` (default: 12000)
+2. Set OSC prefix to match `_OSCPrefix` (default: /VRSL)
+3. Choose Vertical or Horizontal orientation
+4. Enable RGB mode if using expanded universe support
+5. Set your local IP address as the OSC destination
+
+### Testing Connection
+
+1. Enter Play Mode in Unity Editor
+2. In VRChat, join your world with the VRSL Grid node
+3. Send DMX data from your lighting software
+4. Check the Console for "GridReader Init" message
+5. Verify fixtures respond to DMX input
+
+## Example Setup
+
+### Standard Vertical Configuration
+
+```
+Configuration:
+  _IsVertical: true
+  _ExpandedUniverseSupport: false
+  _OSCPort: 12000
+  _OSCPrefix: /VRSL
+  
+_DataBuffer:
+  Size: 208×1072
+  Format: RGBA32
+  Filter Mode: Point
+```
+
+### Horizontal RGB Mode
+
+```
+Configuration:
+  _IsVertical: false
+  _ExpandedUniverseSupport: true
+  _OSCPort: 12000  
+  _OSCPrefix: /VRSL
+  
+_DataBuffer:
+  Size: 1920×208
+  Format: RGBA32
+  Filter Mode: Point
+```
+
+## Troubleshooting
+
+### No Data Received
+
+**Check Console Messages**:
+- "GridReader Init" - Component started successfully
+- "GridReader failed to launch" - Port conflict or initialization error
+
+**Verify Settings**:
+- OSC port matches grid node configuration
+- OSC prefix matches exactly (case-sensitive)
+- Firewall allows UDP traffic on the port
+- VRChat is running and world is loaded
+
+### Incorrect Fixture Response
+
+**Orientation Mismatch**:
+- Ensure `_IsVertical` matches grid node orientation
+- Vertical mode uses 13-wide layout
+- Horizontal mode uses 120-wide layout
+
+**Universe Mode Mismatch**:
+- Match `_ExpandedUniverseSupport` to grid node RGB mode
+- Standard mode: single channel values
+- Expanded mode: separate RGB channels
+
+### Performance Issues
+
+**Update Frequency**:
+- Grid Reader updates every frame in Update()
+- Only updates pixels that have changed
+- Texture.Apply() is called once per frame
+
+**Memory Usage**:
+- Vertical: ~850 KB texture
+- Horizontal: ~1.5 MB texture
+- Color buffer arrays: ~3.5 KB
+
+## Technical Details
+
+### OSC Message Format
+
+**Standard Mode**:
+```
+Address: /VRSL/channel/[index]
+Arguments: [intensity]
+```
+
+**Expanded Mode**:
+```
+Address: /VRSL/channel/[index]
+Arguments: [red, green, blue]
+```
+
+### Pixel Block Layout
+
+Each 16×16 pixel block stores a single DMX channel:
+```
+┌──────────────┐
+│ ▓▓▓▓▓▓▓▓▓▓▓▓ │  All 256 pixels
+│ ▓▓▓▓▓▓▓▓▓▓▓▓ │  set to same
+│ ▓▓▓▓▓▓▓▓▓▓▓▓ │  RGB value
+│ ▓▓▓▓▓▓▓▓▓▓▓▓ │
+└──────────────┘
+   16×16 pixels
+```
+
+### Thread Safety
+
+The OSC listener runs on a separate thread:
+- Callback receives data asynchronously
+- Writes to `_Buf` array (thread-safe for simple writes)
+- Main thread reads from `_Buf` in Update()
+- No locks needed due to write-once-per-frame pattern
+
+## Integration with Other Components
+
+### VRSL_LocalUIControlPanel
+
+The Control Panel component manages which grid mode is active:
+- `DMXMode = 0`: Horizontal grid textures
+- `DMXMode = 1`: Vertical grid textures  
+- `DMXMode = 2`: Legacy grid textures
+
+The Grid Reader populates textures for the active mode.
+
+### VRStageLighting_DMX_Static
+
+DMX fixtures read from the texture buffer:
+- Calculate texture coordinates from DMX channel/universe
+- Sample color from appropriate pixel block
+- Apply color and intensity to shader
+
+### Grid Node (In VRChat)
+
+The VRChat Grid Node:
+- Receives DMX via OSC or Art-Net
+- Transmits to Unity Editor via OSC
+- Handles universe splitting and routing
+- Provides UI for configuration
+
+## Performance Optimization
+
+### Update Optimization
+
+- Uses `_NeedsUpdate` boolean array to track changed channels
+- Only updates texture pixels that have new data
+- Single `Texture2D.Apply()` call per frame
+
+### Memory Efficiency
+
+- Reuses color array for pixel data (256 pixels)
+- Buffers are allocated once in Start()
+- No per-frame allocations
+
+## Limitations
+
+- **Editor Only**: Does not function in builds
+- **Local Only**: Requires VRChat running on same machine
+- **Network Delay**: OSC transmission adds ~10-50ms latency
+- **Channel Limit**: 
+  - Vertical: 871 channels (67 universes @ 13 channels)
+  - Horizontal: 1560 channels (120 universes @ 13 channels)
+
+## See Also
+
+- [DMX Static Component](/components/dmx-static) - Fixtures that read Grid Reader data
+- [Local UI Control Panel](/components/local-ui-control-panel) - Grid mode management
+- [OSC Documentation](http://opensoundcontrol.org/) - OSC protocol reference
